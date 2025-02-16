@@ -186,6 +186,7 @@ melodie_grid_workflow <- function(
 		resamples = resamples,
 		grid = grid,
 		workflow = workflow,
+		param_info = pset,
 		metrics = metrics,
 		eval_time = eval_time,
 		control = control,
