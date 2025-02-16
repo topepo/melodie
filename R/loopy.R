@@ -60,6 +60,8 @@ loopy <- function(resamples, grid, static) {
 		} # model loop
 	} # pre loop
 
+	pred_reserve <- vctrs::vec_cbind(pred_reserve, split_labs)
+
 	all_metrics <- pred_reserve %>%
 		dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
 		tune:::.estimate_metrics(
