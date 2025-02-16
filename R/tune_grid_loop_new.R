@@ -26,7 +26,6 @@ tune_grid_loop_new <- function(
 		y_name = outcome_names(workflow),
 		pred_types = unique(metrics_info(metrics)$type),
 		eval_time = eval_time,
-		event_level = event_level,
 
 		split_args = split_args,
 		control = control,
