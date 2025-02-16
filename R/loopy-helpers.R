@@ -355,8 +355,8 @@ get_data_subsets <- function(wflow, split, split_args = NULL) {
 		dat$ind_cal <- as.integer(split, data = "assessment")
 	}
 
-	dat$data_tr <- rsample::analysis(split)
-	dat$ind_tr <- as.integer(split, data = "assessment")
+	dat$data_fit <- rsample::analysis(split)
+	dat$ind_fit <- as.integer(split, data = "analysis")
 	dat
 }
 

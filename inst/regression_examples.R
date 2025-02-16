@@ -17,6 +17,7 @@ if (FALSE) {
 library(tidymodels)
 library(tailor)
 library(melodie)
+library(rlang)
 
 # ------------------------------------------------------------------------------
 
@@ -62,6 +63,12 @@ pre_submod_param <- pre_submod_wflow  %>% extract_parameter_set_dials()
 pre_submod_reg <- pre_submod_param %>% grid_regular(levels = 3)
 pre_submod_sfd <- pre_submod_param %>% grid_space_filling(size = 10)
 
+# ------------------------------------------------------------------------------
 
+debug(melodie:::tune_grid_loop_new)
 
-
+pre_mod_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_mod_reg
+  )
