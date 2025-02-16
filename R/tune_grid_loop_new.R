@@ -8,11 +8,12 @@ tune_grid_loop_new <- function(
 	control,
 	split_args
 ) {
-	if (is.null(param_info)) {
-		param_info <- hardhat::extract_parameter_set_dials(workflow)
-	}
 
 	mtr_info <- tibble::as_tibble(metrics)
+
+	control <- check_parallel_over(control, resamples)
+
+	resamples <- vec_list_rowwise(resamples)
 
 	# ------------------------------------------------------------------------------
 	# Collect "static" data into a single object for a cleaner interface
@@ -53,7 +54,7 @@ tune_grid_loop_new <- function(
 		# Break all combinations of resamples and candidates into a list of integers
 		# for each combination.
 		inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
-		inds <- vctrs::vec_split(inds, by = 1:nrow(inds))
+		inds <- vec_list_rowwise(inds)
 
 		res <- future.apply::future_lapply(
 			inds,
@@ -64,3 +65,18 @@ tune_grid_loop_new <- function(
 	# ------------------------------------------------------------------------------
 	# Aggregate results into components
 }
+
+vec_list_rowwise <- function(x) {
+  vctrs::vec_split(x, by = 1:nrow(x))$val
+}
+
+check_parallel_over <- function(control, resamples) {
+  if (is.null(control$parallel_over)) {
+    control$parallel_over <- "resamples"
+  }
+  if (length(resamples$splits) == 1) {
+    control$parallel_over <- "everything"
+  }
+  control
+}
+

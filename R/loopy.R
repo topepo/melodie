@@ -5,12 +5,17 @@
 #'
 #' @export
 #' @export
-loopy <- function(split, grid, static) {
+loopy <- function(resamples, grid, static) {
 	# Initialize some objects
+
+  split <- resamples$splits
+  split_labs <-
+    resamples %>%
+    dplyr::select(dplyr::starts_with("id"))
 
 	pred_reserve <- metric_reserve <- NULL
 	pred_iter <- 0
-	# TODO add extras and notes
+	# TODO add extras and notes, maybe may an unber object like `static`
 
 	sched <- get_tune_schedule(static$wflow, static$param_info, grid)
 
