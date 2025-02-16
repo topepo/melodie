@@ -166,14 +166,13 @@ melodie_grid_workflow <- function(workflow,
   split_args <- rsample::.get_split_args(resamples)
   resamples <- new_bare_tibble(resamples)
 
-  resamples <- melodie_grid_loop(
+  resamples <- tune_grid_loop_new(
     resamples = resamples,
     grid = grid,
     workflow = workflow,
     metrics = metrics,
     eval_time = eval_time,
     control = control,
-    rng = rng,
     split_args = split_args
   )
 

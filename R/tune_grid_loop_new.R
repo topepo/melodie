@@ -50,8 +50,11 @@ tune_grid_loop_new <- function(
 		# Multiple resamples but preprocessing is cheap (or just a validation set).
 		# Loop over grid rows and splits
 		candidates <- get_row_wise_grid(workflow, grid)
+		# Break all combinations of resamples and candidates into a list of integers
+		# for each combination.
 		inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
 		inds <- vctrs::vec_split(inds, by = 1:nrow(inds))
+
 		res <- future.apply::future_lapply(
 			inds,
 			~loopy(resamples[[.x$b]], candidates[[.x$s]], static)
