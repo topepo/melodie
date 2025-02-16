@@ -8,7 +8,7 @@
 loopy <- function(resamples, grid, static) {
 	# Initialize some objects
 
-  split <- resamples$splits
+  split <- resamples$splits[[1]]
   split_labs <-
     resamples %>%
     dplyr::select(dplyr::starts_with("id"))

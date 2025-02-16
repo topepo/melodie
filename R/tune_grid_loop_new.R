@@ -29,24 +29,29 @@ tune_grid_loop_new <- function(
 		eval_time = eval_time,
 
 		split_args = split_args,
-		control = control,
-
-		future = list(
-			future.label = "tune-grid-%d",
-			future.stdout = TRUE, # maybe NA
-			future.seed = TRUE,
-			future.globals = c(), # add options from control?
-			future.packages = unique(c(required_pkgs(workflow), control$pkgs)),
-			doFuture.rng.onMisuse = "ignore"
-		)
+		control = control
 	)
+
+	par_opt <-
+	  list(
+	    future.label = "tune-grid-%d",
+	    future.stdout = TRUE, # maybe NA
+	    future.seed = TRUE,
+	    future.globals = c(), # add options from control?
+	    future.packages = unique(c(required_pkgs(workflow), control$pkgs)),
+	    doFuture.rng.onMisuse = "ignore"
+	  )
 
 	# ------------------------------------------------------------------------------
 	# Control execution
 
 	if (control$parallel_over == "resamples") {
 		# The default: Loop over splits, process whole grid
-		res <- future.apply::future_lapply(resamples, ~loopy(.x, grid, static))
+
+	  # TODO add future options
+		# res <- future.apply::future_lapply(resamples, loopy, grid, static)
+
+		res <- lapply(resamples, loopy, grid, static)
 	} else {
 		# Multiple resamples but preprocessing is cheap (or just a validation set).
 		# Loop over grid rows and splits
@@ -58,7 +63,7 @@ tune_grid_loop_new <- function(
 
 		res <- future.apply::future_lapply(
 			inds,
-			~loopy(resamples[[.x$b]], candidates[[.x$s]], static)
+			loopy(resamples[[.x$b]], candidates[[.x$s]], static)
 		)
 	}
 
