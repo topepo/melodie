@@ -2,9 +2,12 @@
 % Please edit documentation in R/loopy.R
 \name{loopy}
 \alias{loopy}
+\alias{loopy2}
 \title{Iterate over workflow settings}
 \usage{
-loopy(split, grid, static)
+loopy(resamples, grid, static)
+
+loopy2(index, resamples, grid, static)
 }
 \arguments{
 \item{grid}{A parameter grid.}

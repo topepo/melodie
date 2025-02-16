@@ -61,10 +61,7 @@ tune_grid_loop_new <- function(
 		inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
 		inds <- vec_list_rowwise(inds)
 
-		res <- future.apply::future_lapply(
-			inds,
-			loopy(resamples[[.x$b]], candidates[[.x$s]], static)
-		)
+		res <- lapply(inds, loopy2, resamples, candidates, static)
 	}
 
 	# ------------------------------------------------------------------------------

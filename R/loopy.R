@@ -4,7 +4,6 @@
 #' @param grid A parameter grid.
 #'
 #' @export
-#' @export
 loopy <- function(resamples, grid, static) {
 	# Initialize some objects
 
@@ -70,9 +69,16 @@ loopy <- function(resamples, grid, static) {
 			outcome_name = static$y_name,
 			event_level = static$control$event_level,
 			metrics_info = static$metrics_info
-		)
+		) %>%
+	  vctrs::vec_cbind(split_labs)
 
 	list(metrics = all_metrics, predictions = pred_reserve)
+}
+
+#' @export
+#' @rdname loopy
+loopy2 <- function(index, resamples, grid, static) {
+  loopy(resamples[[index$b]], grid[[index$s]], static)
 }
 
 # ------------------------------------------------------------------------------
@@ -94,7 +100,7 @@ get_row_wise_grid <- function(wflow, grid) {
 	const_param <- rlang::syms(const_param)
 
 	if (length(submodel) == 0) {
-		inds <- 1:nrow(grids)
+		inds <- 1:nrow(grid)
 	} else {
 		grid_inds <- grid %>%
 			parsnip::add_rowindex() %>%
