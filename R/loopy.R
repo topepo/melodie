@@ -6,7 +6,6 @@
 #' @export
 #' @export
 loopy <- function(split, grid, static) {
-
 	# Initialize some objects
 
 	pred_reserve <- metric_reserve <- NULL
@@ -42,7 +41,7 @@ loopy <- function(split, grid, static) {
 			# Iterate over predictions and postprocessors
 
 			pred <- predictions(
-			  wflow_current = current_wflow,
+				wflow_current = current_wflow,
 				sched = current_model,
 				static = static,
 				grid = current_grid
@@ -56,16 +55,15 @@ loopy <- function(split, grid, static) {
 		} # model loop
 	} # pre loop
 
-	all_metrics <-
-		pred_reserve %>%
-			dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
-			tune:::.estimate_metrics(
-			  metric = static$metrics,
-			  param_names = static$param_info$id,
-				outcome_name = static$y_name,
-				event_level = static$control$event_level,
-				metrics_info = static$metrics_info
-			)
+	all_metrics <- pred_reserve %>%
+		dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
+		tune:::.estimate_metrics(
+			metric = static$metrics,
+			param_names = static$param_info$id,
+			outcome_name = static$y_name,
+			event_level = static$control$event_level,
+			metrics_info = static$metrics_info
+		)
 
 	list(metrics = all_metrics, predictions = pred_reserve)
 }
@@ -78,30 +76,27 @@ loopy <- function(split, grid, static) {
 # subgrid that has fixed values for non-submodel parameters and the associated
 # values of the submodel.
 get_row_wise_grid <- function(wflow, grid) {
-  param_tuned <- tune_args(wflow)$id
-  submodel <-
-    wflow %>%
-    hardhat::extract_spec_parsnip() %>%
-    tune:::get_submodel_info() %>%
-    dplyr::filter(has_submodel) %>%
-    purrr::pluck("id")
+	param_tuned <- tune_args(wflow)$id
+	submodel <- wflow %>%
+		hardhat::extract_spec_parsnip() %>%
+		tune:::get_submodel_info() %>%
+		dplyr::filter(has_submodel) %>%
+		purrr::pluck("id")
 
-  const_param <- setdiff(param_tuned, submodel)
-  const_param <- rlang::syms(const_param)
+	const_param <- setdiff(param_tuned, submodel)
+	const_param <- rlang::syms(const_param)
 
-  if (length(submodel) == 0) {
-    inds <- 1:nrow(grids)
-  } else {
-    grid_inds <-
-      grid %>%
-      parsnip::add_rowindex() %>%
-      dplyr::group_nest(!!!const_param) %>%
-      dplyr::mutate(inds = dplyr::row_number()) %>%
-      tidyr::unnest(c(data)) %>%
-      dplyr::select(-.row)
-    grid <- grid_inds[, param_tuned]
-    inds <- grid_inds$inds
-  }
-  vctrs::vec_split(grid, inds)$val
+	if (length(submodel) == 0) {
+		inds <- 1:nrow(grids)
+	} else {
+		grid_inds <- grid %>%
+			parsnip::add_rowindex() %>%
+			dplyr::group_nest(!!!const_param) %>%
+			dplyr::mutate(inds = dplyr::row_number()) %>%
+			tidyr::unnest(c(data)) %>%
+			dplyr::select(-.row)
+		grid <- grid_inds[, param_tuned]
+		inds <- grid_inds$inds
+	}
+	vctrs::vec_split(grid, inds)$val
 }
-
