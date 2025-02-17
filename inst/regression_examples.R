@@ -64,6 +64,7 @@ pre_submod_reg <- pre_submod_param %>% grid_regular(levels = 3)
 pre_submod_sfd <- pre_submod_param %>% grid_space_filling(size = 10)
 
 # ------------------------------------------------------------------------------
+# no submodels
 
 pre_mod_wflow %>%
   melodie_grid(
@@ -79,4 +80,40 @@ pre_mod_res <-
     control = control_grid(parallel_over = "everything", save_pred = TRUE)
   )
 
+# ------------------------------------------------------------------------------
+# Submodels via boosting
 
+
+bst_reg_tune <-
+  pre_submod_wflow %>%
+  tune::tune_grid(
+    resamples = sim_rs,
+    grid = pre_submod_reg
+  )
+
+bst_reg <-
+  pre_submod_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_reg
+  )
+
+bst_sfd <-
+  pre_submod_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_sfd,
+    control = control_grid(parallel_over = "everything", save_pred = TRUE)
+  )
+
+bst_reg_tune %>%
+  filter(id == "Fold01") %>%
+  pluck(".metrics") %>%
+  pluck(1)%>%
+  inner_join(pre_submod_reg[2,])
+
+bst_reg %>%
+  filter(id == "Fold01") %>%
+  pluck(".metrics") %>%
+  pluck(1)%>%
+  inner_join(pre_submod_reg[2,])
