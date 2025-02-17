@@ -7,10 +7,9 @@
 loopy <- function(resamples, grid, static) {
 	# Initialize some objects
 
-  split <- resamples$splits[[1]]
-  split_labs <-
-    resamples %>%
-    dplyr::select(dplyr::starts_with("id"))
+	split <- resamples$splits[[1]]
+	split_labs <- resamples %>%
+		dplyr::select(dplyr::starts_with("id"))
 
 	pred_reserve <- NULL
 	pred_iter <- 0
@@ -61,8 +60,7 @@ loopy <- function(resamples, grid, static) {
 		} # model loop
 	} # pre loop
 
-	all_metrics <-
-	  pred_reserve %>%
+	all_metrics <- pred_reserve %>%
 		dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
 		tune:::.estimate_metrics(
 			metric = static$metrics,
@@ -71,23 +69,21 @@ loopy <- function(resamples, grid, static) {
 			event_level = static$control$event_level,
 			metrics_info = static$metrics_info
 		) %>%
-	  dplyr::full_join(config_tbl, by = static$param_info$id) %>%
-	  dplyr::arrange(.config)
+		dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+		dplyr::arrange(.config)
 
 	# ----------------------------------------------------------------------------
 	# Return the results
 
-	return_list <-
-	  tibble::tibble(.metrics = list(all_metrics)) %>%
-	  vctrs::vec_cbind(split_labs)
+	return_list <- tibble::tibble(.metrics = list(all_metrics)) %>%
+		vctrs::vec_cbind(split_labs)
 
 	if (static$control$save_pred) {
-	  return_list$.predictions <-
-	    list(
-	      pred_reserve %>%
-	        dplyr::full_join(config_tbl, by = static$param_info$id) %>%
-	        dplyr::arrange(.config)
-	    )
+		return_list$.predictions <- list(
+			pred_reserve %>%
+				dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+				dplyr::arrange(.config)
+		)
 	}
 
 	return_list
@@ -96,7 +92,7 @@ loopy <- function(resamples, grid, static) {
 #' @export
 #' @rdname loopy
 loopy2 <- function(index, resamples, grid, static) {
-  loopy(resamples[[index$b]], grid[[index$s]], static)
+	loopy(resamples[[index$b]], grid[[index$s]], static)
 }
 
 # ------------------------------------------------------------------------------
