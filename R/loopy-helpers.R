@@ -394,3 +394,69 @@ update_reserve <- function(reserve, iter, predictions, grid_size) {
 	reserve[replace_reserve_rows(iter, pred_size), ] <- predictions
 	reserve
 }
+
+# ------------------------------------------------------------------------------
+# Add .config to grid
+
+get_config_key <- function(grid, wflow) {
+  info <- tune_args(wflow)
+  key <- grid
+
+  pre_param <- info$id[info$source == "recipe"]
+  if (length(pre_param) > 0) {
+    key <-
+      make_config_labs(grid, pre_param) %>%
+      dplyr::full_join(key, by = pre_param)
+  } else {
+    key <-
+      key %>%
+      dplyr::mutate(pre = "pre0_")
+  }
+
+  mod_param <- info$id[info$source == "model_spec"]
+  if (length(mod_param) > 0) {
+    key <-
+      make_config_labs(grid, mod_param, "mod") %>%
+      dplyr::full_join(key, by = mod_param)
+  } else {
+    key <-
+      key %>%
+      dplyr::mutate(mod = "mod0_")
+  }
+
+  post_param <- info$id[info$source == "tailor"]
+  if (length(post_param) > 0) {
+    key <-
+      make_config_labs(grid, post_param, "post") %>%
+      dplyr::full_join(key, by = post_param)
+  } else {
+    key <-
+      key %>%
+      dplyr::mutate(post = "post0_")
+  }
+
+  key$.config <- paste(key$pre, key$mod, key$post, sep = "_")
+  key$.config <- gsub("_$", "", key$.config)
+  key %>%
+    dplyr::arrange(.config) %>%
+    dplyr::select(dplyr::all_of(info$id), .config)
+}
+
+make_config_labs <- function(grid, param, val = "pre") {
+  res <-
+    grid %>%
+    dplyr::select(dplyr::all_of(param)) %>%
+    dplyr::distinct() %>%
+    dplyr::arrange(!!!rlang::syms(param)) %>%
+    dplyr::mutate(
+      num = format(dplyr::row_number()),
+      num = gsub(" ", "0", num),
+      {{val}} := paste0(val, num)
+    ) %>%
+    dplyr::select(-num)
+
+  res
+}
+
+
+
