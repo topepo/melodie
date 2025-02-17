@@ -12,11 +12,13 @@ loopy <- function(resamples, grid, static) {
     resamples %>%
     dplyr::select(dplyr::starts_with("id"))
 
-	pred_reserve <- metric_reserve <- NULL
+	pred_reserve <- NULL
 	pred_iter <- 0
 	# TODO add extras and notes, maybe may an unber object like `static`
 
 	sched <- get_tune_schedule(static$wflow, static$param_info, grid)
+
+	config_tbl <- get_config_key(grid, static$wflow)
 
 	# append data partitions here; these are the same for the duration of this function
 	static <- c(static, get_data_subsets(static$wflow, split, static$split_args))
@@ -59,9 +61,8 @@ loopy <- function(resamples, grid, static) {
 		} # model loop
 	} # pre loop
 
-	pred_reserve <- vctrs::vec_cbind(pred_reserve, split_labs)
-
-	all_metrics <- pred_reserve %>%
+	all_metrics <-
+	  pred_reserve %>%
 		dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
 		tune:::.estimate_metrics(
 			metric = static$metrics,
@@ -70,9 +71,26 @@ loopy <- function(resamples, grid, static) {
 			event_level = static$control$event_level,
 			metrics_info = static$metrics_info
 		) %>%
+	  dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+	  dplyr::arrange(.config)
+
+	# ----------------------------------------------------------------------------
+	# Return the results
+
+	return_list <-
+	  tibble::tibble(.metrics = list(all_metrics)) %>%
 	  vctrs::vec_cbind(split_labs)
 
-	list(metrics = all_metrics, predictions = pred_reserve)
+	if (static$control$save_pred) {
+	  return_list$.predictions <-
+	    list(
+	      pred_reserve %>%
+	        dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+	        dplyr::arrange(.config)
+	    )
+	}
+
+	return_list
 }
 
 #' @export

@@ -66,6 +66,20 @@ tune_grid_loop_new <- function(
 
 	# ------------------------------------------------------------------------------
 	# Aggregate results into components
+
+	res <- dplyr::bind_rows(res)
+	resamples <- dplyr::bind_rows(resamples)
+	id_cols <- grep("^id", names(resamples), value = TRUE)
+
+	if (control$parallel_over == "resamples") {
+	  res <- dplyr::full_join(resamples, res, by = id_cols)
+	} else {
+	  # TODO Re-group the results so each row is a resample
+	  res <- dplyr::full_join(resamples, res, by = id_cols)
+	}
+
+	res
+
 }
 
 vec_list_rowwise <- function(x) {

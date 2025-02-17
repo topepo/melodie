@@ -65,10 +65,18 @@ pre_submod_sfd <- pre_submod_param %>% grid_space_filling(size = 10)
 
 # ------------------------------------------------------------------------------
 
-debug(melodie:::tune_grid_loop_new)
-
 pre_mod_wflow %>%
   melodie_grid(
     resamples = sim_rs,
     grid = pre_mod_reg
   )
+
+pre_mod_res <-
+  pre_mod_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_mod_reg,
+    control = control_grid(parallel_over = "everything", save_pred = TRUE)
+  )
+
+
