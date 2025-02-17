@@ -14,6 +14,13 @@ tune_grid_loop_new <- function(
 
 	resamples <- vec_list_rowwise(resamples)
 
+	# if (!catalog_is_active()) {
+	#   initialize_catalog(control = control)
+	# }
+
+	# TODO Do we need to evaluate the call to foreach in a local environment using a
+	# clone of the current environment as the current version does
+
 	# ------------------------------------------------------------------------------
 	# Collect "static" data into a single object for a cleaner interface
 
@@ -52,7 +59,7 @@ tune_grid_loop_new <- function(
 		cl <- loop_call(control, par_opt)
 		res <- rlang::eval_bare(cl)
 	} else {
-		# Multiple resamples but preprocessing is cheap (or just a validation set).
+		# If multiple resamples but preprocessing is cheap (or just a validation set).
 		# Loop over grid rows and splits
 		candidates <- get_row_wise_grid(workflow, grid)
 		# Break all combinations of resamples and candidates into a list of integers
@@ -65,7 +72,7 @@ tune_grid_loop_new <- function(
 	}
 
 	# ------------------------------------------------------------------------------
-	# Aggregate results into components
+	# Separate results into different components
 
 	res <- dplyr::bind_rows(res)
 	resamples <- dplyr::bind_rows(resamples)
