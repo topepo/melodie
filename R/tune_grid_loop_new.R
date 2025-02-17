@@ -8,7 +8,6 @@ tune_grid_loop_new <- function(
 	control,
 	split_args
 ) {
-
 	mtr_info <- tibble::as_tibble(metrics)
 
 	control <- check_parallel_over(control, resamples)
@@ -32,15 +31,17 @@ tune_grid_loop_new <- function(
 		control = control
 	)
 
-	par_opt <-
-	  list(
-	    future.label = "tune-grid-%d",
-	    future.stdout = TRUE, # maybe NA
-	    future.seed = TRUE,
-	    future.globals = c(), # add options from control?
-	    future.packages = unique(c(required_pkgs(workflow), control$pkgs)),
-	    doFuture.rng.onMisuse = "ignore"
-	  )
+	tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip")
+	load_pkgs <- c(required_pkgs(workflow), control$pkgs, tm_pkgs)
+	load_pkgs <- unique(load_pkgs)
+
+	par_opt <- list(
+		future.label = "tune-grid-%d",
+		future.stdout = TRUE, # maybe NA
+		future.seed = TRUE,
+		# future.globals = c(), # add options from control?
+		future.packages = quote(load_pkgs)
+	)
 
 	# ------------------------------------------------------------------------------
 	# Control execution
@@ -48,10 +49,8 @@ tune_grid_loop_new <- function(
 	if (control$parallel_over == "resamples") {
 		# The default: Loop over splits, process whole grid
 
-	  # TODO add future options
-		# res <- future.apply::future_lapply(resamples, loopy, grid, static)
-
-		res <- lapply(resamples, loopy, grid, static)
+		cl <- loop_call(control, par_opt)
+		res <- rlang::eval_bare(cl)
 	} else {
 		# Multiple resamples but preprocessing is cheap (or just a validation set).
 		# Loop over grid rows and splits
@@ -61,7 +60,8 @@ tune_grid_loop_new <- function(
 		inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
 		inds <- vec_list_rowwise(inds)
 
-		res <- lapply(inds, loopy2, resamples, candidates, static)
+		cl <- loop_call(control, par_opt)
+		res <- rlang::eval_bare(cl)
 	}
 
 	# ------------------------------------------------------------------------------
@@ -72,27 +72,72 @@ tune_grid_loop_new <- function(
 	id_cols <- grep("^id", names(resamples), value = TRUE)
 
 	if (control$parallel_over == "resamples") {
-	  res <- dplyr::full_join(resamples, res, by = id_cols)
+		res <- dplyr::full_join(resamples, res, by = id_cols)
 	} else {
-	  # TODO Re-group the results so each row is a resample
-	  res <- dplyr::full_join(resamples, res, by = id_cols)
+		# TODO Re-group the results so each row is a resample
+		res <- dplyr::full_join(resamples, res, by = id_cols)
 	}
 
 	res
-
 }
 
 vec_list_rowwise <- function(x) {
-  vctrs::vec_split(x, by = 1:nrow(x))$val
+	vctrs::vec_split(x, by = 1:nrow(x))$val
 }
 
 check_parallel_over <- function(control, resamples) {
-  if (is.null(control$parallel_over)) {
-    control$parallel_over <- "resamples"
-  }
-  if (length(resamples$splits) == 1) {
-    control$parallel_over <- "everything"
-  }
-  control
+	if (is.null(control$parallel_over)) {
+		control$parallel_over <- "resamples"
+	}
+	if (length(resamples$splits) == 1) {
+		control$parallel_over <- "everything"
+	}
+	control
 }
 
+loop_call <- function(ctrl, opts) {
+	if (ctrl$allow_par) {
+		if (ctrl$parallel_over == "resamples") {
+			cl <- rlang::call2(
+				"future_lapply",
+				.ns = "future.apply",
+				X = quote(resamples),
+				FUN = "loopy",
+				quote(grid),
+				quote(static),
+				!!!opts
+			)
+		} else {
+			cl <- rlang::call2(
+				"future_lapply",
+				.ns = "future.apply",
+				X = quote(inds),
+				FUN = "loopy2",
+				quote(resamples),
+				quote(candidates),
+				quote(static),
+				!!!opts
+			)
+		}
+	} else {
+		if (ctrl$parallel_over == "resamples") {
+			cl <- rlang::call2(
+				"lapply",
+				X = quote(resamples),
+				FUN = "loopy",
+				quote(grid),
+				quote(static)
+			)
+		} else {
+			cl <- rlang::call2(
+				"lapply",
+				X = quote(inds),
+				FUN = "loopy2",
+				quote(resamples),
+				quote(candidates),
+				quote(static)
+			)
+		}
+	}
+	cl
+}
