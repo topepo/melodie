@@ -55,6 +55,11 @@ adjust_cal <-
   tailor::tailor() %>%
   tailor::adjust_numeric_calibration(method = "linear")
 
+adjust_min_cal <-
+  tailor::tailor() %>%
+  tailor::adjust_numeric_calibration(method = "linear") %>%
+  tailor::adjust_numeric_range(lower_limit = tune())
+
 mod_bst <- parsnip::boost_tree(trees = tune(), min_n = tune(), mode = "regression")
 mod_rf <- parsnip::rand_forest(min_n = tune(), mode = "regression")
 
@@ -90,6 +95,13 @@ pre_submod_cal_param <- pre_submod_cal_wflow  %>% extract_parameter_set_dials()
 pre_submod_cal_reg <- pre_submod_cal_param %>% grid_regular(levels = 3)
 pre_submod_cal_sfd <- pre_submod_cal_param %>% grid_space_filling(size = 10)
 
+pre_submod_tune_cal_wflow <- workflow(rec, mod_bst, adjust_min_cal)
+pre_submod_tune_cal_param <-
+  pre_submod_tune_cal_wflow %>%
+  extract_parameter_set_dials() %>%
+  update(lower_limit = lower_limit(c(-1, 2)))
+pre_submod_tune_cal_reg <- pre_submod_tune_cal_param %>% grid_regular(levels = 3)
+pre_submod_tune_cal_sfd <- pre_submod_tune_cal_param %>% grid_space_filling(size = 10)
 
 # ------------------------------------------------------------------------------
 # no submodels
@@ -198,7 +210,19 @@ bst_tune_reg <-
   melodie_grid(
     resamples = sim_rs,
     grid = pre_submod_cal_reg,
-    control = control_grid(allow_par = FALSE)
+    control = control_grid(allow_par = TRUE, save_pred = TRUE)
+  )
+
+
+# ------------------------------------------------------------------------------
+# Submodels via boosting with a simple calibrator and post tuning
+
+bst_tune_cal_reg <-
+  pre_submod_tune_cal_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_tune_cal_reg,
+    control = control_grid(allow_par = TRUE, save_pred = TRUE)
   )
 
 

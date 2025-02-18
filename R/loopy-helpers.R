@@ -288,8 +288,8 @@ predict_post_loop <- function(wflow_current, sched, grid, static) {
 }
 
 predictions <- function(wflow_current, sched, static, grid) {
-  browser
 	strategy <- strategy2(wflow_current)
+
 	if (strategy == "predict_only") {
 		pred <- predict_only(wflow_current, sched, grid, static)
 	} else if (strategy == "no_estimation_or_tuning") {
@@ -299,7 +299,8 @@ predictions <- function(wflow_current, sched, static, grid) {
 	} else if (strategy == "estimation_but_no_tuning") {
 	  pred <- post_estimation_but_no_tuning(wflow_current, sched, grid, static)
 	} else {
-		pred <- estimation_and_tuning(wflow_current, sched, grid, static)
+	  # estimation_and_tuning
+		pred <- post_estimation_and_tuning(wflow_current, sched, grid, static)
 	}
 
 # TODO return pred and fitted workflow(s) IF extraction
@@ -338,6 +339,35 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
 
   predict(post_obj, perf_predictions)
 }
+
+
+# Get the raw predictions for the calibration and assessment sets, looping over
+# tuning parameters to train tailors, then apply them to the assessment data
+post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
+  post_obj <- hardhat::extract_postprocessor(wflow_current)
+  post_id <- setdiff(static$param_info$id, names(grid))
+
+  post_candidates <-
+    sched$predict_stage[[1]] %>%
+    tidyr::unnest(cols = c(post_stage)) %>%
+    dplyr::select(dplyr::all_of(post_id)) %>%
+    dplyr::distinct()
+
+  post_predictions <- NULL
+  for (j in 1:nrow(post_candidates)) {
+    current_post_param <- post_candidates[j,]
+
+    # Finalize current tailor with parameters and stuff back in the workflow
+    tmp_post <- finalize_tailor(post_obj, current_post_param)
+    tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
+    tmp_pred <-
+      post_estimation_but_no_tuning(tmp_wflow, sched, grid, static) %>%
+      vctrs::vec_cbind(current_post_param)
+    post_predictions <- bind_rows(post_predictions, tmp_pred)
+  }
+  post_predictions
+}
+
 
 # Get the predictions for the assessment set, "train" a single tailor, then
 # apply it to all of the data
