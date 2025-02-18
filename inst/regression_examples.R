@@ -86,7 +86,7 @@ pre_submod_tune_wflow <- workflow(rec, mod_bst, adjust_min_tune)
 pre_submod_tune_param <-
   pre_submod_tune_wflow %>%
   extract_parameter_set_dials() %>%
-  update(lower_limit = lower_limit(c(-1, 2)))
+  update(lower_limit = lower_limit(c(-100, 2)))
 pre_submod_tune_reg <- pre_submod_tune_param %>% grid_regular(levels = 3)
 pre_submod_tune_sfd <- pre_submod_tune_param %>% grid_space_filling(size = 10)
 
@@ -99,7 +99,7 @@ pre_submod_tune_cal_wflow <- workflow(rec, mod_bst, adjust_min_cal)
 pre_submod_tune_cal_param <-
   pre_submod_tune_cal_wflow %>%
   extract_parameter_set_dials() %>%
-  update(lower_limit = lower_limit(c(-1, 2)))
+  update(lower_limit = lower_limit(c(-100, 2)))
 pre_submod_tune_cal_reg <- pre_submod_tune_cal_param %>% grid_regular(levels = 3)
 pre_submod_tune_cal_sfd <- pre_submod_tune_cal_param %>% grid_space_filling(size = 10)
 
@@ -201,6 +201,13 @@ bst_tune_reg <-
     control = control_grid(allow_par = FALSE)
   )
 
+bst_tune_sfd <-
+  pre_submod_tune_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_tune_sfd,
+    control = control_grid(allow_par = FALSE)
+  )
 
 # ------------------------------------------------------------------------------
 # Submodels via boosting with simple calibrator
@@ -225,4 +232,11 @@ bst_tune_cal_reg <-
     control = control_grid(allow_par = TRUE, save_pred = TRUE)
   )
 
+bst_tune_cal_sfd <-
+  pre_submod_tune_cal_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_tune_cal_sfd,
+    control = control_grid(allow_par = TRUE, save_pred = TRUE)
+  )
 

@@ -218,7 +218,6 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
   predict(post_obj, perf_predictions)
 }
 
-
 # Get the raw predictions for the calibration and assessment sets, looping over
 # tuning parameters to train tailors, then apply them to the assessment data
 post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {

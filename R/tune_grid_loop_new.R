@@ -12,11 +12,15 @@ tune_grid_loop_new <- function(
 
   control <- check_parallel_over(control, resamples)
 
+  rset_info <- pull_rset_attributes(resamples)
+  resamples_arg <- resamples
   resamples <- vec_list_rowwise(resamples)
 
   # if (!catalog_is_active()) {
   #   initialize_catalog(control = control)
   # }
+
+  # add an on.exit(); esc puts us in code
 
   # ------------------------------------------------------------------------------
   # Collect "static" data into a single object for a cleaner interface
@@ -94,8 +98,24 @@ tune_grid_loop_new <- function(
       dplyr::full_join(resamples, by = id_cols)
   }
 
-  # relocate
-  res
+  # TODO faking notes
+  res$.notes <- purrr::map(1:nrow(res), ~ tibble::tibble())
+
+  res <-
+    res %>%
+    dplyr::relocate(splits, dplyr::starts_with("id"), .metrics, .notes,
+                    dplyr::any_of(".predictions"), dplyr::any_of(".extracts"))
+
+  tune_contructor(
+    resamples = res,
+    parameters = param_info,
+    metrics = metrics,
+    eval_time = eval_time,
+    eval_time_target = NULL,
+    outcomes = static$y_name,
+    rset_info = rset_info,
+    workflow = workflow
+  )
 }
 
 vec_list_rowwise <- function(x) {
@@ -160,3 +180,50 @@ loop_call <- function(ctrl, opts) {
   }
   cl
 }
+
+
+# `new_tune_results()` is exported so let's make a different one
+
+tune_contructor <- function(resamples,
+                            parameters,
+                            metrics,
+                            eval_time,
+                            eval_time_target,
+                            outcomes = character(0),
+                            rset_info,
+                            ...,
+                            cls = character(0)) {
+  new_bare_tibble(
+    x = resamples,
+    parameters = parameters,
+    metrics = metrics,
+    eval_time = eval_time,
+    eval_time_target = eval_time_target,
+    outcomes = outcomes,
+    rset_info = rset_info,
+    ...,
+    class = c(cls, "tune_results")
+  )
+}
+
+
+# copy
+#' @export
+#' @keywords internal
+#' @rdname empty_ellipses
+pull_rset_attributes <- function(x) {
+  excl_att <- c("names", "row.names")
+  att <- attributes(x)
+  att_nms <- names(att)
+  att_nms <- setdiff(att_nms, excl_att)
+  att$class <- setdiff(class(x), class(tibble::new_tibble(list())))
+  att$class <- att$class[att$class != "rset"]
+
+  lab <- try(pretty(x), silent = TRUE)
+  if (inherits(lab, "try-error")) {
+    lab <- NA_character_
+  }
+  list(att = att[att_nms], label = lab)
+}
+
+
