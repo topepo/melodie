@@ -122,7 +122,8 @@ bst_reg <-
   pre_submod_wflow %>%
   melodie_grid(
     resamples = sim_rs,
-    grid = pre_submod_reg
+    grid = pre_submod_reg,
+    control = control_grid(parallel_over = "everything", save_pred = TRUE, allow_par = FALSE)
   )
 
 bst_sfd <-
@@ -130,7 +131,7 @@ bst_sfd <-
   melodie_grid(
     resamples = sim_rs,
     grid = pre_submod_sfd,
-    control = control_grid(parallel_over = "everything", save_pred = TRUE)
+    control = control_grid(parallel_over = "everything", save_pred = TRUE, allow_par = FALSE)
   )
 
 bst_reg_tune %>%
@@ -180,3 +181,13 @@ bst_sfd <-
 
 # ------------------------------------------------------------------------------
 # Submodels via boosting with tunable postprocessor
+
+bst_tune_reg <-
+  pre_submod_tune_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_tune_reg,
+    control = control_grid(allow_par = FALSE)
+  )
+
+

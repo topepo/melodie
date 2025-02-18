@@ -24,7 +24,7 @@ tune_grid_loop_new <- function(
 	static <- list(
 		wflow = workflow,
 		param_info = param_info,
-		needs_estimation = workflows::.workflow_includes_calibration(workflow),
+		post_estimation = workflows::.workflow_includes_calibration(workflow),
 
 		metrics = metrics,
 		metric_info = mtr_info,
