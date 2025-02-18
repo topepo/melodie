@@ -33,7 +33,7 @@ options(pillar.advice = FALSE, pillar.min_title_chars = Inf)
 # ------------------------------------------------------------------------------
 
 set.seed(1)
-sim_tr <- sim_regression(500)
+sim_tr <- sim_regression(5000)
 sim_cal <- sim_regression(100)
 sim_rs <- vfold_cv(sim_tr)
 
@@ -206,7 +206,7 @@ bst_tune_sfd <-
   melodie_grid(
     resamples = sim_rs,
     grid = pre_submod_tune_sfd,
-    control = control_grid(allow_par = FALSE)
+    control = control_grid(allow_par = TRUE, parallel_over = "everything")
   )
 
 # ------------------------------------------------------------------------------
@@ -220,6 +220,13 @@ bst_tune_reg <-
     control = control_grid(allow_par = TRUE, save_pred = TRUE)
   )
 
+bst_tune_sfd <-
+  pre_submod_cal_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_cal_sfd,
+    control = control_grid(allow_par = TRUE, save_pred = TRUE)
+  )
 
 # ------------------------------------------------------------------------------
 # Submodels via boosting with a simple calibrator and post tuning

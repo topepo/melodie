@@ -92,7 +92,7 @@ tune_grid_loop_new <- function(
     res <-
       res %>%
       dplyr::summarize(
-        dplyr::across(c(dplyr::matches("^\\."), ~ list(purrr::list_rbind(.x)))),
+        dplyr::across(dplyr::matches("^\\."), ~ list(purrr::list_rbind(.x))),
         .by = c(!!!id_cols)
       ) %>%
       dplyr::full_join(resamples, by = id_cols)
