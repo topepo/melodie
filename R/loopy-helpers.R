@@ -169,8 +169,8 @@ pred_post_strategy <- function(x) {
 	res
 }
 
-predict_only <- function(wflow_current, sched, grid, static) {
-	pred <- sched_predict_wrapper(sched, wflow_current, static)
+predict_only <- function(wflow_current, sched, grid, static, estimation = FALSE) {
+	pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
 
 	if (has_sub_param(sched$predict_stage[[1]])) {
 	  # The data come in as a list column so unlist and add the rest of the grid.
@@ -288,6 +288,7 @@ predict_post_loop <- function(wflow_current, sched, grid, static) {
 }
 
 predictions <- function(wflow_current, sched, static, grid) {
+  browser
 	strategy <- strategy2(wflow_current)
 	if (strategy == "predict_only") {
 		pred <- predict_only(wflow_current, sched, grid, static)
@@ -318,6 +319,25 @@ predictions <- function(wflow_current, sched, static, grid) {
 		)
 }
 
+# Get the raw predictions for the calibration and assessment sets, train a single
+# tailor, then apply it to the assessment data
+post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
+  cal_predictions <- predict_only(wflow_current, sched, grid, static, estimation = TRUE)
+  perf_predictions <- predict_only(wflow_current, sched, grid, static, estimation = FALSE)
+
+  outputs <- get_output_columns(wflow_current, syms = TRUE)
+
+  post_obj <- wflow_current %>%
+    hardhat::extract_postprocessor() %>%
+    fit(
+      .data = cal_predictions,
+      outcome = !!outputs$outcome[[1]],
+      estimate = !!outputs$estimate[[1]],
+      probabilities = c(!!!outputs$probabilities)
+    )
+
+  predict(post_obj, perf_predictions)
+}
 
 # Get the predictions for the assessment set, "train" a single tailor, then
 # apply it to all of the data
@@ -455,8 +475,8 @@ get_data_subsets <- function(wflow, split, split_args = NULL) {
 		#   assessment set and those predictions are assessed with performance metrics
 		split <- rsample::inner_split(split, split_args = split_args)
 
-		dat$data_cal <- vctrs::vec_slice(split$data, calibration_rows)
 		dat$ind_cal <- as.integer(split, data = "assessment")
+		dat$data_cal <- vctrs::vec_slice(split$data, dat$ind_cal)
 	}
 
 	dat$data_fit <- rsample::analysis(split)

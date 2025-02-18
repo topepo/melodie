@@ -170,7 +170,6 @@ bst_reg %>%
   pluck(1)%>%
   inner_join(pre_submod_reg[2,])
 
-
 bst_sfd <-
   pre_submod_min_wflow %>%
   melodie_grid(
@@ -187,6 +186,18 @@ bst_tune_reg <-
   melodie_grid(
     resamples = sim_rs,
     grid = pre_submod_tune_reg,
+    control = control_grid(allow_par = FALSE)
+  )
+
+
+# ------------------------------------------------------------------------------
+# Submodels via boosting with simple calibrator
+
+bst_tune_reg <-
+  pre_submod_cal_wflow %>%
+  melodie_grid(
+    resamples = sim_rs,
+    grid = pre_submod_cal_reg,
     control = control_grid(allow_par = FALSE)
   )
 
