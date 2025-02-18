@@ -60,12 +60,13 @@ has_tailor_estimated <- function(x) {
 }
 
 # ------------------------------------------------------------------------------
-# PRediction and postprocessing
+# Prediction and postprocessing
 
 # TODO add eval_time
 sched_predict_wrapper <- function(sched, wflow_current, static) {
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
+	# TODO change data if estimation is required?
 	if (has_sub_param(sched$predict_stage[[1]])) {
 		sub_param <- get_sub_param(sched$predict_stage[[1]])
 		sub_list <- sched$predict_stage[[1]] %>%
