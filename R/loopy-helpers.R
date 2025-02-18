@@ -119,7 +119,7 @@ sched_predict_wrapper <- function(sched, wflow_current, static, estimation = FAL
   pred
 }
 
-strategy2 <- function(x) {
+pred_post_strategy <- function(x) {
 
   if (has_tailor(x)) {
 
@@ -150,25 +150,6 @@ strategy2 <- function(x) {
   res
 }
 
-pred_post_strategy <- function(x) {
-	if (has_tailor(x)) {
-		if (has_tailor_tuned(x) | has_tailor_estimated(x)) {
-			# TODO do we need to check estimation?
-			# There is no way to get around having to estimate/fit the tailor object
-			# for each postprocessing tuning combination
-			res <- "loop over pred and post"
-		} else {
-			# For a set of predictions, or a set of submodel predictions, we can
-			# just apply the tailor object (i.e. predict) to the set(s)
-			res <- "predict and post at same time"
-		}
-	} else {
-		# No postproessing, stop at prediction, submodels or not
-		res <- "just predict"
-	}
-	res
-}
-
 predict_only <- function(wflow_current, sched, grid, static, estimation = FALSE) {
 	pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
 
@@ -184,111 +165,8 @@ predict_only <- function(wflow_current, sched, grid, static, estimation = FALSE)
 	pred
 }
 
-predict_post_one_shot <- function(wflow_current, sched, grid, static) {
-	# ----------------------------------------------------------------------------
-	# Get all predictions
-
-	pred <- sched_predict_wrapper(sched, wflow_current, static)
-
-	if (has_sub_param(sched$predict_stage[[1]])) {
-		sub_param <- get_sub_param(sched$predict_stage[[1]])
-		pred <- pred %>%
-			tidyr::unnest(.pred) %>%
-			vctrs::vec_cbind(grid %>% dplyr::select(-dplyr::all_of(sub_param)))
-	} else {
-		pred <- pred %>% vctrs::vec_cbind(grid)
-	}
-
-	# ----------------------------------------------------------------------------
-	# 'fit' the tailor object to use to postprocess
-
-	outputs <- get_output_columns(wflow_current, syms = TRUE)
-
-	post_obj <- wflow_current %>%
-		hardhat::extract_postprocessor() %>%
-		fit(
-			.data = pred[1, ],
-			outcome = !!outputs$outcome[[1]],
-			estimate = !!outputs$estimate[[1]],
-			probabilities = c(!!!outputs$probabilities)
-		)
-
-	pred <- predict(post_obj, pred)
-
-	pred
-}
-
-predict_post_loop <- function(wflow_current, sched, grid, static) {
-	outputs <- get_output_columns(wflow_current, syms = TRUE)
-
-	# TODO fails at group_nest with "Column `lower_limit` is not found."
-	# `grid` doesn't have all of the tuning parameters
-
-	# ----------------------------------------------------------------------------
-	# Generate all predictions then nest for each candidate (excluding post
-	# parameters)
-
-	tune_id <- rlang::syms(static$param_info$id)
-
-	pred <- sched_predict_wrapper(sched, wflow_current, static)
-
-	if (has_sub_param(sched$predict_stage[[1]])) {
-		sub_param <- get_sub_param(sched$predict_stage[[1]])
-		pred <- pred %>%
-			tidyr::unnest(.pred) %>%
-			vctrs::vec_cbind(grid %>% dplyr::select(-dplyr::all_of(sub_param)))
-	} else {
-		pred <- pred %>% vctrs::vec_cbind(grid)
-	}
-
-	pred <- pred %>% dplyr::group_nest(!!!tune_id, .key = "res")
-	# pred$res is class "vctrs_list_of" and that will prevent us from pushing
-	# updates values into the column, so we'll convert it into a basic list
-	pred$res <- as.list(pred$res)
-
-	num_pred_iter <- nrow(pred)
-
-	# ----------------------------------------------------------------------------
-	# Now, for each set of predictions, postprocess for each post-candidate
-
-	post_obj <- hardhat::extract_postprocessor(wflow_current)
-
-	for (prd in seq_len(num_pred_iter)) {
-		current_pred <- sched$predict_stage[[1]][prd, ]
-		num_post_iter <- nrow(current_pred$post_stage[[1]])
-
-		# TODO check here for a calibration set and make new predictions if needed.
-		current_predictions <- pred$res[[prd]]
-
-		new_pred <- NULL
-		for (post in seq_len(num_post_iter)) {
-			current_post <- current_pred$post_stage[[1]][post, ]
-			current_post_obj <- finalize_tailor(post_obj, as.list(current_post))
-
-			current_post_obj <- current_post_obj %>%
-				fit(
-					.data = pred$res[[prd]],
-					outcome = !!outputs$outcome[[1]],
-					estimate = !!outputs$estimate[[1]],
-					probabilities = c(!!!outputs$probabilities)
-				)
-
-			# Need another version of nesting to insert the sequence of post tuning
-			# parameters
-			new_pred <- dplyr::bind_rows(
-				new_pred,
-				predict(current_post_obj, current_predictions) %>%
-					vctrs::vec_cbind(current_post)
-			)
-		}
-		pred$res[[prd]] <- new_pred
-	}
-
-	pred %>% tidyr::unnest(res)
-}
-
 predictions <- function(wflow_current, sched, static, grid) {
-	strategy <- strategy2(wflow_current)
+	strategy <- pred_post_strategy(wflow_current)
 
 	if (strategy == "predict_only") {
 		pred <- predict_only(wflow_current, sched, grid, static)
@@ -303,7 +181,7 @@ predictions <- function(wflow_current, sched, static, grid) {
 		pred <- post_estimation_and_tuning(wflow_current, sched, grid, static)
 	}
 
-# TODO return pred and fitted workflow(s) IF extraction
+	# TODO return pred and fitted workflow(s) IF extraction
 
 	if (!tibble::is_tibble(pred)) { # TODO probably not needed
 		pred <- dplyr::as_tibble(pred)
@@ -451,24 +329,6 @@ model_update_fit <- function(wflow_current, grid) {
 
 	# .catch_and_log_fit()
 	.fit_model(wflow_current, workflows::control_workflow())
-}
-
-# not currently used
-post_update_fit <- function(wflow_current, grid, post_data) {
-	post_spec <- hardhat::extract_postprocessor(wflow_current)
-
-	grid <- remove_stage(grid)
-	post_proc_param <- hardhat::extract_parameter_set_dials(post_spec)
-	post_proc_id <- post_proc_param$id
-
-	if (length(post_proc_id) > 0) {
-		grid <- grid[, post_proc_id]
-		post_spec <- finalize_tailor(post_spec, grid)
-		wflow_current <- set_workflow_tailor(wflow_current, post_spec)
-	}
-
-	wflow_current <- .fit_post(wflow_current, post_data) # static
-	.fit_finalize(wflow_current)
 }
 
 # ------------------------------------------------------------------------------

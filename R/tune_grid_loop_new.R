@@ -1,163 +1,162 @@
 tune_grid_loop_new <- function(
-	resamples,
-	grid,
-	workflow,
-	param_info,
-	metrics,
-	eval_time,
-	control,
-	split_args
+    resamples,
+    grid,
+    workflow,
+    param_info,
+    metrics,
+    eval_time,
+    control,
+    split_args
 ) {
-	mtr_info <- tibble::as_tibble(metrics)
+  mtr_info <- tibble::as_tibble(metrics)
 
-	control <- check_parallel_over(control, resamples)
+  control <- check_parallel_over(control, resamples)
 
-	resamples <- vec_list_rowwise(resamples)
+  resamples <- vec_list_rowwise(resamples)
 
-	# if (!catalog_is_active()) {
-	#   initialize_catalog(control = control)
-	# }
+  # if (!catalog_is_active()) {
+  #   initialize_catalog(control = control)
+  # }
 
-	# ------------------------------------------------------------------------------
-	# Collect "static" data into a single object for a cleaner interface
+  # ------------------------------------------------------------------------------
+  # Collect "static" data into a single object for a cleaner interface
 
-	static <- list(
-		wflow = workflow,
-		param_info = param_info,
-		post_estimation = workflows::.workflow_includes_calibration(workflow),
+  static <- list(
+    wflow = workflow,
+    param_info = param_info,
+    post_estimation = workflows::.workflow_includes_calibration(workflow),
 
-		metrics = metrics,
-		metric_info = mtr_info,
-		y_name = outcome_names(workflow),
-		pred_types = unique(metrics_info(metrics)$type),
-		eval_time = eval_time,
+    metrics = metrics,
+    metric_info = mtr_info,
+    y_name = outcome_names(workflow),
+    pred_types = unique(metrics_info(metrics)$type),
+    eval_time = eval_time,
 
-		split_args = split_args,
-		control = control
-	)
+    split_args = split_args,
+    control = control
+  )
 
-	tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip", "tailor")
-	load_pkgs <- c(required_pkgs(workflow), control$pkgs, tm_pkgs)
-	load_pkgs <- unique(load_pkgs)
+  tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip", "tailor")
+  load_pkgs <- c(required_pkgs(workflow), control$pkgs, tm_pkgs)
+  load_pkgs <- unique(load_pkgs)
 
-	par_opt <- list(
-		future.label = "tune-grid-%d",
-		future.stdout = TRUE,
-		future.seed = TRUE,
-		# future.globals = c(), # add options from control?
-		future.packages = quote(load_pkgs)
-	)
+  par_opt <- list(
+    future.label = "tune-grid-%d",
+    future.stdout = TRUE,
+    future.seed = TRUE,
+    # future.globals = c(), # add options from control?
+    future.packages = quote(load_pkgs)
+  )
 
-	# ------------------------------------------------------------------------------
-	# Control execution
+  # ------------------------------------------------------------------------------
+  # Control execution
 
-	if (control$parallel_over == "resamples") {
-		# The default: Loop over splits, process whole grid
+  if (control$parallel_over == "resamples") {
+    # The default: Loop over splits, process whole grid
 
-		cl <- loop_call(control, par_opt)
-		res <- rlang::eval_bare(cl)
-	} else {
+    cl <- loop_call(control, par_opt)
+    res <- rlang::eval_bare(cl)
+  } else {
 
-	  # TODO go back and revaluate if the helper functions to schedule certain
-	  # stages can be used at this level of the computations (see: Frick(2025))
+    # TODO go back and revaluate if the helper functions to schedule certain
+    # stages can be used at this level of the computations (see: Frick(2025))
 
-		# If multiple resamples but preprocessing is cheap (or just a validation set).
-		# Loop over grid rows and splits
-		candidates <- get_row_wise_grid(workflow, grid)
-		# Break all combinations of resamples and candidates into a list of integers
-		# for each combination.
-		inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
-		inds <- vec_list_rowwise(inds)
+    # If multiple resamples but preprocessing is cheap (or just a validation set).
+    # Loop over grid rows and splits
+    candidates <- get_row_wise_grid(workflow, grid)
+    # Break all combinations of resamples and candidates into a list of integers
+    # for each combination.
+    inds <- tidyr::crossing(s = seq_along(candidates), b = seq_along(resamples))
+    inds <- vec_list_rowwise(inds)
 
-		cl <- loop_call(control, par_opt)
-		res <- rlang::eval_bare(cl)
-	}
+    cl <- loop_call(control, par_opt)
+    res <- rlang::eval_bare(cl)
+  }
 
-	# ------------------------------------------------------------------------------
-	# Separate results into different components
+  # ------------------------------------------------------------------------------
+  # Separate results into different components
 
-	res <- dplyr::bind_rows(res)
-	resamples <- dplyr::bind_rows(resamples)
-	id_cols <- grep("^id", names(resamples), value = TRUE)
+  res <- dplyr::bind_rows(res)
+  resamples <- dplyr::bind_rows(resamples)
+  id_cols <- grep("^id", names(resamples), value = TRUE)
 
-	if (control$parallel_over == "resamples") {
-		res <- dplyr::full_join(resamples, res, by = id_cols)
-	} else {
-		# Clean up for variable columns and make into a function
-		pool_cols <- grep("^\\.", names(res), value = TRUE)
-		res <-
-		  res %>%
-		  dplyr::summarize(
-		    .metrics = list(purrr::list_rbind(.metrics)),
-		    .predictions = list(purrr::list_rbind(.predictions)),
-		    .by = c(!!!id_cols)
-		    ) %>%
-		  dplyr::full_join(resamples, by = id_cols)
-	}
+  if (control$parallel_over == "resamples") {
+    res <- dplyr::full_join(resamples, res, by = id_cols)
+  } else {
+    # Clean up for variable columns and make into a function
+    pool_cols <- grep("^\\.", names(res), value = TRUE)
+    res <-
+      res %>%
+      dplyr::summarize(
+        dplyr::across(c(dplyr::matches("^\\."), ~ list(purrr::list_rbind(.x)))),
+        .by = c(!!!id_cols)
+      ) %>%
+      dplyr::full_join(resamples, by = id_cols)
+  }
 
-	# relocate
-	res
+  # relocate
+  res
 }
 
 vec_list_rowwise <- function(x) {
-	vctrs::vec_split(x, by = 1:nrow(x))$val
+  vctrs::vec_split(x, by = 1:nrow(x))$val
 }
 
 check_parallel_over <- function(control, resamples) {
-	if (is.null(control$parallel_over)) {
-		control$parallel_over <- "resamples"
-	}
-	if (length(resamples$splits) == 1) {
-		control$parallel_over <- "everything"
-	}
-	control
+  if (is.null(control$parallel_over)) {
+    control$parallel_over <- "resamples"
+  }
+  if (length(resamples$splits) == 1) {
+    control$parallel_over <- "everything"
+  }
+  control
 }
 
 # TODO for futures to do code inspection to figure out globals, we might need
 # to explicitly have the code written out.
 loop_call <- function(ctrl, opts) {
-	if (ctrl$allow_par) {
-		if (ctrl$parallel_over == "resamples") {
-			cl <- rlang::call2(
-				"future_lapply",
-				.ns = "future.apply",
-				X = quote(resamples),
-				FUN = "loopy",
-				quote(grid),
-				quote(static),
-				!!!opts
-			)
-		} else {
-			cl <- rlang::call2(
-				"future_lapply",
-				.ns = "future.apply",
-				X = quote(inds),
-				FUN = "loopy2",
-				quote(resamples),
-				quote(candidates),
-				quote(static),
-				!!!opts
-			)
-		}
-	} else {
-		if (ctrl$parallel_over == "resamples") {
-			cl <- rlang::call2(
-				"lapply",
-				X = quote(resamples),
-				FUN = "loopy",
-				quote(grid),
-				quote(static)
-			)
-		} else {
-			cl <- rlang::call2(
-				"lapply",
-				X = quote(inds),
-				FUN = "loopy2",
-				quote(resamples),
-				quote(candidates),
-				quote(static)
-			)
-		}
-	}
-	cl
+  if (ctrl$allow_par) {
+    if (ctrl$parallel_over == "resamples") {
+      cl <- rlang::call2(
+        "future_lapply",
+        .ns = "future.apply",
+        X = quote(resamples),
+        FUN = "loopy",
+        quote(grid),
+        quote(static),
+        !!!opts
+      )
+    } else {
+      cl <- rlang::call2(
+        "future_lapply",
+        .ns = "future.apply",
+        X = quote(inds),
+        FUN = "loopy2",
+        quote(resamples),
+        quote(candidates),
+        quote(static),
+        !!!opts
+      )
+    }
+  } else {
+    if (ctrl$parallel_over == "resamples") {
+      cl <- rlang::call2(
+        "lapply",
+        X = quote(resamples),
+        FUN = "loopy",
+        quote(grid),
+        quote(static)
+      )
+    } else {
+      cl <- rlang::call2(
+        "lapply",
+        X = quote(inds),
+        FUN = "loopy2",
+        quote(resamples),
+        quote(candidates),
+        quote(static)
+      )
+    }
+  }
+  cl
 }
