@@ -18,15 +18,13 @@ tune_grid_loop_new <- function(
 	#   initialize_catalog(control = control)
 	# }
 
-	# TODO Do we need to evaluate the call to foreach in a local environment using a
-	# clone of the current environment as the current version does
-
 	# ------------------------------------------------------------------------------
 	# Collect "static" data into a single object for a cleaner interface
 
 	static <- list(
 		wflow = workflow,
 		param_info = param_info,
+		needs_estimation = workflows::.workflow_includes_calibration(workflow),
 
 		metrics = metrics,
 		metric_info = mtr_info,
@@ -44,7 +42,7 @@ tune_grid_loop_new <- function(
 
 	par_opt <- list(
 		future.label = "tune-grid-%d",
-		future.stdout = TRUE, # maybe NA
+		future.stdout = TRUE,
 		future.seed = TRUE,
 		# future.globals = c(), # add options from control?
 		future.packages = quote(load_pkgs)
@@ -59,6 +57,10 @@ tune_grid_loop_new <- function(
 		cl <- loop_call(control, par_opt)
 		res <- rlang::eval_bare(cl)
 	} else {
+
+	  # TODO go back and revaluate if the helper functions to schedule certain
+	  # stages can be used at this level of the computations (see: Frick(2025))
+
 		# If multiple resamples but preprocessing is cheap (or just a validation set).
 		# Loop over grid rows and splits
 		candidates <- get_row_wise_grid(workflow, grid)
@@ -111,6 +113,8 @@ check_parallel_over <- function(control, resamples) {
 	control
 }
 
+# TODO for futures to do code inspection to figure out globals, we might need
+# to explicitly have the code written out.
 loop_call <- function(ctrl, opts) {
 	if (ctrl$allow_par) {
 		if (ctrl$parallel_over == "resamples") {
