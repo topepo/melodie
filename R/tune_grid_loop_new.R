@@ -38,7 +38,7 @@ tune_grid_loop_new <- function(
 		control = control
 	)
 
-	tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip")
+	tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip", "tailor")
 	load_pkgs <- c(required_pkgs(workflow), control$pkgs, tm_pkgs)
 	load_pkgs <- unique(load_pkgs)
 

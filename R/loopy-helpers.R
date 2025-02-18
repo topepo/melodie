@@ -177,8 +177,12 @@ predict_post_one_shot <- function(wflow_current, sched, grid, static) {
 predict_post_loop <- function(wflow_current, sched, grid, static) {
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
+	# TODO fails at group_nest with "Column `lower_limit` is not found."
+	# `grid` doesn't have all of the tuning parameters
+
 	# ----------------------------------------------------------------------------
-	# Generate all predictions then nest for each candidate
+	# Generate all predictions then nest for each candidate (excluding post
+	# parameters)
 
 	tune_id <- rlang::syms(static$param_info$id)
 
@@ -208,6 +212,8 @@ predict_post_loop <- function(wflow_current, sched, grid, static) {
 	for (prd in seq_len(num_pred_iter)) {
 		current_pred <- sched$predict_stage[[1]][prd, ]
 		num_post_iter <- nrow(current_pred$post_stage[[1]])
+
+		# TODO check here for a calibration set and make new predictions if needed.
 		current_predictions <- pred$res[[prd]]
 
 		new_pred <- NULL
@@ -245,6 +251,7 @@ predictions <- function(wflow_current, sched, static, grid) {
 	} else if (strategy == "predict and post at same time") {
 		pred <- predict_post_one_shot(wflow_current, sched, grid, static)
 	} else {
+	  # TODO this should also return the fitted workflow for extraction
 		pred <- predict_post_loop(wflow_current, sched, grid, static)
 	}
 	if (tibble::is_tibble(pred)) {
