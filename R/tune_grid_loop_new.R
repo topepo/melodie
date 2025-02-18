@@ -81,10 +81,19 @@ tune_grid_loop_new <- function(
 	if (control$parallel_over == "resamples") {
 		res <- dplyr::full_join(resamples, res, by = id_cols)
 	} else {
-		# TODO Re-group the results so each row is a resample
-		res <- dplyr::full_join(resamples, res, by = id_cols)
+		# Clean up for variable columns and make into a function
+		pool_cols <- grep("^\\.", names(res), value = TRUE)
+		res <-
+		  res %>%
+		  dplyr::summarize(
+		    .metrics = list(purrr::list_rbind(.metrics)),
+		    .predictions = list(purrr::list_rbind(.predictions)),
+		    .by = c(!!!id_cols)
+		    ) %>%
+		  dplyr::full_join(resamples, by = id_cols)
 	}
 
+	# relocate
 	res
 }
 

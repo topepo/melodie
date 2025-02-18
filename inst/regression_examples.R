@@ -12,7 +12,12 @@ if (FALSE) {
       paste0("tidyverse/", c("dplyr", "ggplot2", "purrr", "tibble", "tidyr"))
     ),
     ask = FALSE)
+
+  library(future.mirai)
+  plan(mirai_multisession)
 }
+
+# ------------------------------------------------------------------------------
 
 library(tidymodels)
 library(tailor)
@@ -48,7 +53,7 @@ adjust_min_tune <-
 
 adjust_cal <-
   tailor::tailor() %>%
-  tailor::adjust_numeric_calibration(method = "linear", )
+  tailor::adjust_numeric_calibration(method = "linear")
 
 mod_bst <- parsnip::boost_tree(trees = tune(), min_n = tune(), mode = "regression")
 mod_rf <- parsnip::rand_forest(min_n = tune(), mode = "regression")
