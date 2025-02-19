@@ -31,6 +31,7 @@ library(probably)
 tidymodels_prefer()
 theme_set(theme_bw())
 options(pillar.advice = FALSE, pillar.min_title_chars = Inf)
+options(future.globals.maxSize = 1.0 * 1e9)
 
 # ------------------------------------------------------------------------------
 
