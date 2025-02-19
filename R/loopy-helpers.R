@@ -154,10 +154,11 @@ predict_only <- function(
 	sched,
 	grid,
 	static,
-	estimation = FALSE
+	estimation = FALSE,
+	extract = TRUE
 ) {
 	pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
-
+# TODO `grid` not in arguments
 	if (has_sub_param(sched$predict_stage[[1]])) {
 		# The data come in as a list column so unlist and add the rest of the grid.
 		sub_param <- get_sub_param(sched$predict_stage[[1]])
@@ -167,6 +168,9 @@ predict_only <- function(
 	} else {
 		pred <- pred %>% vctrs::vec_cbind(grid)
 	}
+
+	# skip if being called by other predict method below
+	maybe_extract(wflow_current, static, grid, extract)
 	pred
 }
 
@@ -481,3 +485,23 @@ make_config_labs <- function(grid, param, val = "pre") {
 
 	res
 }
+
+# ------------------------------------------------------------------------------
+# extraction
+
+maybe_extract <- function(fit, static, grid = NULL, sched = NULL, extract = TRUE) {
+  if (is.null(static$control$extract) | !extract) {
+    return(NULL)
+  }
+
+  # cli::cli_inform("extracting!")
+
+  # How to piece grid back together (maybe requires schedule)
+  res <- try(static$control$extract(fit), silent = TRUE)
+  res <- tibble::tibble(.extract = list(res))
+  res <- vctrs::vec_cbind(grid, res)
+  print(res)
+  res
+}
+
+
