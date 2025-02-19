@@ -67,94 +67,99 @@ has_tailor_estimated <- function(x) {
 # Note that if there are submodels, the results are in a list column and the
 # data in the list elements only have the grid values for the submodel
 # parameter (not the whole grid).
-sched_predict_wrapper <- function(sched, wflow_current, static, estimation = FALSE) {
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
+sched_predict_wrapper <- function(
+	sched,
+	wflow_current,
+	static,
+	estimation = FALSE
+) {
+	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-  if (has_sub_param(sched$predict_stage[[1]])) {
-    sub_param <- get_sub_param(sched$predict_stage[[1]])
-    sub_list <- sched$predict_stage[[1]] %>%
-      dplyr::select(dplyr::all_of(sub_param)) %>%
-      as.list()
-  } else {
-    sub_list <- NULL
-  }
+	if (has_sub_param(sched$predict_stage[[1]])) {
+		sub_param <- get_sub_param(sched$predict_stage[[1]])
+		sub_list <- sched$predict_stage[[1]] %>%
+			dplyr::select(dplyr::all_of(sub_param)) %>%
+			as.list()
+	} else {
+		sub_list <- NULL
+	}
 
-  if (estimation & static$post_estimation) {
-    .data <- static$data_cal
-    .ind <- static$ind_cal
-  } else {
-    .data <- static$data_perf
-    .ind <- static$ind_perf
-  }
+	if (estimation & static$post_estimation) {
+		.data <- static$data_cal
+		.ind <- static$ind_cal
+	} else {
+		.data <- static$data_perf
+		.ind <- static$ind_perf
+	}
 
-  processed_data_pred <- forge_from_workflow(.data, wflow_current)
-  processed_data_pred$outcomes <- processed_data_pred$outcomes %>%
-    dplyr::mutate(.row = .ind)
+	processed_data_pred <- forge_from_workflow(.data, wflow_current)
+	processed_data_pred$outcomes <- processed_data_pred$outcomes %>%
+		dplyr::mutate(.row = .ind)
 
-  pred <- NULL
-  for (type_iter in static$pred_types) {
-    tmp_res <- predict_wrapper(
-      model = wflow_current %>% hardhat::extract_fit_parsnip(),
-      new_data = processed_data_pred$predictors,
-      type = type_iter,
-      eval_time = static$eval_time,
-      subgrid = sub_list
-    )
-    pred <- vctrs::vec_cbind(pred, tmp_res)
-  }
+	pred <- NULL
+	for (type_iter in static$pred_types) {
+		tmp_res <- predict_wrapper(
+			model = wflow_current %>% hardhat::extract_fit_parsnip(),
+			new_data = processed_data_pred$predictors,
+			type = type_iter,
+			eval_time = static$eval_time,
+			subgrid = sub_list
+		)
+		pred <- vctrs::vec_cbind(pred, tmp_res)
+	}
 
-  pred <- pred %>%
-    dplyr::mutate(.row = .ind) %>%
-    dplyr::full_join(processed_data_pred$outcomes, by = ".row") %>%
-    dplyr::relocate(
-      c(
-        dplyr::all_of(static$y_name),
-        dplyr::starts_with(".pred"),
-        dplyr::any_of(".eval_time"),
-        .row
-      ),
-      .before = dplyr::everything()
-    )
+	pred <- pred %>%
+		dplyr::mutate(.row = .ind) %>%
+		dplyr::full_join(processed_data_pred$outcomes, by = ".row") %>%
+		dplyr::relocate(
+			c(
+				dplyr::all_of(static$y_name),
+				dplyr::starts_with(".pred"),
+				dplyr::any_of(".eval_time"),
+				.row
+			),
+			.before = dplyr::everything()
+		)
 
-  pred
+	pred
 }
 
 pred_post_strategy <- function(x) {
+	if (has_tailor(x)) {
+		if (has_tailor_tuned(x)) {
+			if (has_tailor_estimated(x)) {
+				res <- "estimation_and_tuning"
+			} else {
+				res <- "no_estimation_but_tuning"
+			}
+		} else {
+			# Not tuned
 
-  if (has_tailor(x)) {
+			if (has_tailor_estimated(x)) {
+				res <- "estimation_but_no_tuning"
+			} else {
+				res <- "no_estimation_or_tuning"
+			}
+		}
+	} else {
+		# no tailor
+		res <- "predict_only"
+	}
 
-    if (has_tailor_tuned(x)) {
-
-      if (has_tailor_estimated(x)) {
-        res <- "estimation_and_tuning"
-      } else {
-        res <- "no_estimation_but_tuning"
-      }
-
-    } else {
-      # Not tuned
-
-      if (has_tailor_estimated(x)) {
-        res <- "estimation_but_no_tuning"
-      } else {
-        res <- "no_estimation_or_tuning"
-      }
-
-    }
-
-  } else {
-    # no tailor
-    res <- "predict_only"
-  }
-
-  res
+	res
 }
 
-predict_only <- function(wflow_current, sched, grid, static, estimation = FALSE) {
+predict_only <- function(
+	wflow_current,
+	sched,
+	grid,
+	static,
+	estimation = FALSE
+) {
 	pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
 
 	if (has_sub_param(sched$predict_stage[[1]])) {
-	  # The data come in as a list column so unlist and add the rest of the grid.
+		# The data come in as a list column so unlist and add the rest of the grid.
 		sub_param <- get_sub_param(sched$predict_stage[[1]])
 		pred <- pred %>%
 			tidyr::unnest(.pred) %>%
@@ -173,17 +178,18 @@ predictions <- function(wflow_current, sched, static, grid) {
 	} else if (strategy == "no_estimation_or_tuning") {
 		pred <- post_no_estimation_or_tuning(wflow_current, sched, grid, static)
 	} else if (strategy == "no_estimation_but_tuning") {
-	  pred <- post_no_estimation_but_tuning(wflow_current, sched, grid, static)
+		pred <- post_no_estimation_but_tuning(wflow_current, sched, grid, static)
 	} else if (strategy == "estimation_but_no_tuning") {
-	  pred <- post_estimation_but_no_tuning(wflow_current, sched, grid, static)
+		pred <- post_estimation_but_no_tuning(wflow_current, sched, grid, static)
 	} else {
-	  # estimation_and_tuning
+		# estimation_and_tuning
 		pred <- post_estimation_and_tuning(wflow_current, sched, grid, static)
 	}
 
 	# TODO return pred and fitted workflow(s) IF extraction
 
-	if (!tibble::is_tibble(pred)) { # TODO probably not needed
+	if (!tibble::is_tibble(pred)) {
+		# TODO probably not needed
 		pred <- dplyr::as_tibble(pred)
 	}
 	pred %>%
@@ -201,96 +207,108 @@ predictions <- function(wflow_current, sched, static, grid) {
 # Get the raw predictions for the calibration and assessment sets, train a single
 # tailor, then apply it to the assessment data
 post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
-  cal_predictions <- predict_only(wflow_current, sched, grid, static, estimation = TRUE)
-  perf_predictions <- predict_only(wflow_current, sched, grid, static, estimation = FALSE)
+	cal_predictions <- predict_only(
+		wflow_current,
+		sched,
+		grid,
+		static,
+		estimation = TRUE
+	)
+	perf_predictions <- predict_only(
+		wflow_current,
+		sched,
+		grid,
+		static,
+		estimation = FALSE
+	)
 
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
+	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-  post_obj <- wflow_current %>%
-    hardhat::extract_postprocessor() %>%
-    fit(
-      .data = cal_predictions,
-      outcome = !!outputs$outcome[[1]],
-      estimate = !!outputs$estimate[[1]],
-      probabilities = c(!!!outputs$probabilities)
-    )
+	post_obj <- wflow_current %>%
+		hardhat::extract_postprocessor() %>%
+		fit(
+			.data = cal_predictions,
+			outcome = !!outputs$outcome[[1]],
+			estimate = !!outputs$estimate[[1]],
+			probabilities = c(!!!outputs$probabilities)
+		)
 
-  predict(post_obj, perf_predictions)
+	predict(post_obj, perf_predictions)
 }
 
 # Get the raw predictions for the calibration and assessment sets, looping over
 # tuning parameters to train tailors, then apply them to the assessment data
 post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
-  post_obj <- hardhat::extract_postprocessor(wflow_current)
-  post_id <- setdiff(static$param_info$id, names(grid))
+	post_obj <- hardhat::extract_postprocessor(wflow_current)
+	post_id <- setdiff(static$param_info$id, names(grid))
 
-  post_candidates <-
-    sched$predict_stage[[1]] %>%
-    tidyr::unnest(cols = c(post_stage)) %>%
-    dplyr::select(dplyr::all_of(post_id)) %>%
-    dplyr::distinct()
+	post_candidates <- sched$predict_stage[[1]] %>%
+		tidyr::unnest(cols = c(post_stage)) %>%
+		dplyr::select(dplyr::all_of(post_id)) %>%
+		dplyr::distinct()
 
-  post_predictions <- NULL
-  for (j in 1:nrow(post_candidates)) {
-    current_post_param <- post_candidates[j,]
+	post_predictions <- NULL
+	for (j in 1:nrow(post_candidates)) {
+		current_post_param <- post_candidates[j, ]
 
-    # Finalize current tailor with parameters and stuff back in the workflow
-    tmp_post <- finalize_tailor(post_obj, current_post_param)
-    tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-    tmp_pred <-
-      post_estimation_but_no_tuning(tmp_wflow, sched, grid, static) %>%
-      vctrs::vec_cbind(current_post_param)
-    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
-  }
-  post_predictions
+		# Finalize current tailor with parameters and stuff back in the workflow
+		tmp_post <- finalize_tailor(post_obj, current_post_param)
+		tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
+		tmp_pred <- post_estimation_but_no_tuning(
+			tmp_wflow,
+			sched,
+			grid,
+			static
+		) %>%
+			vctrs::vec_cbind(current_post_param)
+		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
+	}
+	post_predictions
 }
-
 
 # Get the predictions for the assessment set, "train" a single tailor, then
 # apply it to all of the data
 post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
-  raw_predictions <- predict_only(wflow_current, sched, grid, static)
+	raw_predictions <- predict_only(wflow_current, sched, grid, static)
 
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
+	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-  post_obj <- wflow_current %>%
-    hardhat::extract_postprocessor() %>%
-    fit(
-      # The data are not used for estimation, so save time with plist
-      .data = raw_predictions[0,],
-      outcome = !!outputs$outcome[[1]],
-      estimate = !!outputs$estimate[[1]],
-      probabilities = c(!!!outputs$probabilities)
-    )
+	post_obj <- wflow_current %>%
+		hardhat::extract_postprocessor() %>%
+		fit(
+			# The data are not used for estimation, so save time with plist
+			.data = raw_predictions[0, ],
+			outcome = !!outputs$outcome[[1]],
+			estimate = !!outputs$estimate[[1]],
+			probabilities = c(!!!outputs$probabilities)
+		)
 
-  predict(post_obj, raw_predictions)
+	predict(post_obj, raw_predictions)
 }
 
 # Get the predictions for the assessment set, "train" a single tailor, then
 # apply it to all of the data
 post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
-  post_obj <- hardhat::extract_postprocessor(wflow_current)
-  post_id <- setdiff(static$param_info$id, names(grid))
+	post_obj <- hardhat::extract_postprocessor(wflow_current)
+	post_id <- setdiff(static$param_info$id, names(grid))
 
-  post_candidates <-
-    sched$predict_stage[[1]] %>%
-    tidyr::unnest(cols = c(post_stage)) %>%
-    dplyr::select(dplyr::all_of(post_id)) %>%
-    dplyr::distinct()
+	post_candidates <- sched$predict_stage[[1]] %>%
+		tidyr::unnest(cols = c(post_stage)) %>%
+		dplyr::select(dplyr::all_of(post_id)) %>%
+		dplyr::distinct()
 
-  post_predictions <- NULL
-  for (j in 1:nrow(post_candidates)) {
-    current_post_param <- post_candidates[j,]
+	post_predictions <- NULL
+	for (j in 1:nrow(post_candidates)) {
+		current_post_param <- post_candidates[j, ]
 
-    # Finalize current tailor with parameters and stuff back in the workflow
-    tmp_post <- finalize_tailor(post_obj, current_post_param)
-    tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-    tmp_pred <-
-      post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) %>%
-      vctrs::vec_cbind(current_post_param)
-    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
-  }
-  post_predictions
+		# Finalize current tailor with parameters and stuff back in the workflow
+		tmp_post <- finalize_tailor(post_obj, current_post_param)
+		tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
+		tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) %>%
+			vctrs::vec_cbind(current_post_param)
+		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
+	}
+	post_predictions
 }
 
 # ------------------------------------------------------------------------------
