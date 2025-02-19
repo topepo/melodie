@@ -13,6 +13,14 @@ loopy <- function(resamples, grid, static) {
 
 	pred_reserve <- NULL
 	pred_iter <- 0
+	out_notes <-
+	  tibble::new_tibble(list(
+	    location = character(0),
+	    type = character(0),
+	    note = character(0),
+	    trace = list()
+	  ))
+
 	# TODO add extras and notes, maybe may an unber object like `static`
 
 	sched <- get_tune_schedule(static$wflow, static$param_info, grid)
@@ -29,7 +37,16 @@ loopy <- function(resamples, grid, static) {
 
 	for (pre in seq_len(num_pre_iter)) {
 		current_pre <- sched[pre, ]
-		current_wflow <- pre_update_fit(static$wflow, current_pre, static)
+
+		current_wflow <-
+		  .catch_and_log(
+		    .expr = pre_update_fit(static$wflow, current_pre, static),
+		    static$control,
+		    split_labels,
+		    cli::format_inline("Preprocessor candidate #{pre}"),
+		    notes = out_notes
+		  )
+
 		num_mod_iter <- nrow(current_pre$model_stage[[1]])
 
 		# --------------------------------------------------------------------------
@@ -37,7 +54,15 @@ loopy <- function(resamples, grid, static) {
 
 		for (mod in seq_len(num_mod_iter)) {
 			current_model <- current_pre$model_stage[[1]][mod, ]
-			current_wflow <- model_update_fit(current_wflow, current_model)
+
+			current_wflow <-
+			  .catch_and_log(
+			    .expr = model_update_fit(current_wflow, current_model),
+			    static$control,
+			    split_labels,
+			    cli::format_inline("Preprocessor candidate #{pre}, model fit #{mod}"),
+			    notes = out_notes
+			  )
 
 			num_pred_iter <- nrow(current_model$predict_stage[[1]])
 			current_grid <- rebind_grid(current_pre, current_model)

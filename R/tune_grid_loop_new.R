@@ -16,9 +16,9 @@ tune_grid_loop_new <- function(
 	resamples_arg <- resamples
 	resamples <- vec_list_rowwise(resamples)
 
-	# if (!catalog_is_active()) {
-	#   initialize_catalog(control = control)
-	# }
+	if (!catalog_is_active()) {
+	  initialize_catalog(control = control)
+	}
 
 	# add an on.exit(); esc puts us in code
 
