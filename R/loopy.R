@@ -13,7 +13,7 @@ loopy <- function(resamples, grid, static) {
 
 	pred_reserve <- NULL
 	pred_iter <- 0
-	# TODO add extras and notes, maybe may an unber object like `static`
+	# TODO add extras and notes, maybe may an uber object like `static`
 
 	sched <- get_tune_schedule(static$wflow, static$param_info, grid)
 
