@@ -240,7 +240,7 @@ post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
     tmp_pred <-
       post_estimation_but_no_tuning(tmp_wflow, sched, grid, static) %>%
       vctrs::vec_cbind(current_post_param)
-    post_predictions <- bind_rows(post_predictions, tmp_pred)
+    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
   }
   post_predictions
 }
@@ -288,7 +288,7 @@ post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
     tmp_pred <-
       post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) %>%
       vctrs::vec_cbind(current_post_param)
-    post_predictions <- bind_rows(post_predictions, tmp_pred)
+    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
   }
   post_predictions
 }
@@ -421,7 +421,7 @@ get_config_key <- function(grid, wflow) {
 			dplyr::full_join(key, by = pre_param)
 	} else {
 		key <- key %>%
-			dplyr::mutate(pre = "pre0_")
+			dplyr::mutate(pre = "pre0")
 	}
 
 	mod_param <- info$id[info$source == "model_spec"]
@@ -430,7 +430,7 @@ get_config_key <- function(grid, wflow) {
 			dplyr::full_join(key, by = mod_param)
 	} else {
 		key <- key %>%
-			dplyr::mutate(mod = "mod0_")
+			dplyr::mutate(mod = "mod0")
 	}
 
 	post_param <- info$id[info$source == "tailor"]
@@ -439,7 +439,7 @@ get_config_key <- function(grid, wflow) {
 			dplyr::full_join(key, by = post_param)
 	} else {
 		key <- key %>%
-			dplyr::mutate(post = "post0_")
+			dplyr::mutate(post = "post0")
 	}
 
 	key$.config <- paste(key$pre, key$mod, key$post, sep = "_")

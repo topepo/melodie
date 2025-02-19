@@ -67,7 +67,7 @@ loopy <- function(resamples, grid, static) {
 			param_names = static$param_info$id,
 			outcome_name = static$y_name,
 			event_level = static$control$event_level,
-			metrics_info = static$metrics_info
+			metrics_info = tune:::metrics_info(static$metrics) # static$metric_info TODO fix
 		) %>%
 		dplyr::full_join(config_tbl, by = static$param_info$id) %>%
 		dplyr::arrange(.config)
