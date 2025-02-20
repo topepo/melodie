@@ -160,7 +160,7 @@ nb_thresh_reg_res <-
   melodie_grid(
     resamples = sim_rs,
     grid = nb_thresh_reg,
-    control = control_grid(allow_par = TRUE, save_pred = TRUE),
+    control = control_grid(allow_par = TRUE, save_pred = TRUE, extract = function(x) x),
     metrics = cls_br_mtr
   )
 
