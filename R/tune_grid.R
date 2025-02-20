@@ -177,11 +177,6 @@ melodie_grid_workflow <- function(
 		pset = pset
 	)
 
-	# Save rset attributes, then fall back to a bare tibble
-	rset_info <- pull_rset_attributes(resamples)
-	split_args <- rsample::.get_split_args(resamples)
-	resamples <- new_bare_tibble(resamples)
-
 	resamples <- tune_grid_loop_new(
 		resamples = resamples,
 		grid = grid,
@@ -189,8 +184,7 @@ melodie_grid_workflow <- function(
 		param_info = pset,
 		metrics = metrics,
 		eval_time = eval_time,
-		control = control,
-		split_args = split_args
+		control = control
 	)
 }
 

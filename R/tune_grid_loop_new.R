@@ -5,20 +5,18 @@ tune_grid_loop_new <- function(
 	param_info,
 	metrics,
 	eval_time,
-	control,
-	split_args
+	control
 ) {
 	mtr_info <- tibble::as_tibble(metrics)
 
 	control <- check_parallel_over(control, resamples)
 
+	# We'll significantly alter the rsample object but will need it intact later;
+	# Make a copy and save some information before proceeding
 	rset_info <- pull_rset_attributes(resamples)
-	resamples_arg <- resamples
+	split_args <- rsample::.get_split_args(resamples)
+	# Break it up row-wise to facilitate mapping/parallelism
 	resamples <- vec_list_rowwise(resamples)
-
-	# if (!catalog_is_active()) {
-	#   initialize_catalog(control = control)
-	# }
 
 	# add an on.exit(); esc puts us in code
 
