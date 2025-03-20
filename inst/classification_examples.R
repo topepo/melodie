@@ -9,7 +9,8 @@ if (FALSE) {
                "stacks", "tailor", "textrecipes", "themis", "tune", "workflows",
                "workflowsets", "yardstick")
       ),
-      paste0("tidyverse/", c("dplyr", "ggplot2", "purrr", "tibble", "tidyr"))
+      paste0("tidyverse/", c("dplyr", "ggplot2", "purrr", "tibble", "tidyr")),
+      paste0("r-lib/", c("sparsevctrs"))
     ),
     ask = FALSE)
 
