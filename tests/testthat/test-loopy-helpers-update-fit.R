@@ -142,3 +142,35 @@ test_that("pre_update_fit() with selectors", {
   expect_named(vars_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
 })
 
+test_that("model_update_fit() for classification", {
+  skip_if_not_installed("modeldata")
+
+  data("two_class_dat", package = "modeldata")
+  two_class_rs <- mc_cv(two_class_dat, times = 2)
+  rs_split <- two_class_rs$splits[[1]]
+
+  # ----------------------------------------------------------------------------
+
+  dt_wflow <- workflow(Class ~ ., dt_spec)
+  dt_grid <- tibble(min_n = 5)
+
+  dt_stc <- melodie:::make_static(
+    dt_wflow,
+    param_info = dt_wflow %>% extract_parameter_set_dials(),
+    metrics = metric_set(brier_class, spec),
+    eval_time = NULL,
+    split_args = rsample::.get_split_args(two_class_rs),
+    control = control_grid()
+  )
+  dt_stc <- c(
+    dt_stc,
+    melodie:::get_data_subsets(dt_stc$wflow, rs_split, dt_stc$split_args)
+  )
+
+  dt_0_res <- melodie:::pre_update_fit(dt_wflow, dt_grid, dt_stc)
+  dt_res <- melodie:::model_update_fit(dt_0_res, dt_grid)
+  expect_s3_class(dt_res, "workflow")
+  dt_res <- dt_res %>% extract_fit_parsnip()
+  expect_s3_class(dt_res, c("_C5.0", "model_fit"))
+})
+
