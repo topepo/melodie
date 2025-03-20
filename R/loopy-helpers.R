@@ -1,6 +1,24 @@
 # Helpers for loopy()
 
 # ------------------------------------------------------------------------------
+
+# Note: in loop(), we add more elements for the outcome name(s(), and the
+# data partitions
+make_static <- function(workflow, param_info, metrics, eval_time, split_args, control) {
+  list(
+    wflow = workflow,
+    param_info = param_info,
+    post_estimation = workflows::.workflow_includes_calibration(workflow),
+    metrics = metrics,
+    metric_info = tibble::as_tibble(metrics),
+    pred_types = unique(metrics_info(metrics)$type),
+    eval_time = eval_time,
+    split_args = split_args,
+    control = control
+  )
+}
+
+# ------------------------------------------------------------------------------
 # For stages
 
 remove_stage <- function(x) {
@@ -335,11 +353,11 @@ model_update_fit <- function(wflow_current, grid) {
 	mod_spec <- hardhat::extract_spec_parsnip(wflow_current)
 
 	grid <- remove_stage(grid)
-	pre_proc_param <- hardhat::extract_parameter_set_dials(mod_spec)
-	pre_proc_id <- pre_proc_param$id
+	mod_param <- hardhat::extract_parameter_set_dials(mod_spec)
+	mod_id <- mod_param$id
 
-	if (length(pre_proc_id) > 0) {
-		grid <- grid[, pre_proc_id]
+	if (length(mod_id) > 0) {
+		grid <- grid[, mod_id]
 		mod_spec <- finalize_model(mod_spec, grid)
 		wflow_current <- set_workflow_spec(wflow_current, mod_spec)
 	}

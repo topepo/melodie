@@ -23,19 +23,13 @@ tune_grid_loop_new <- function(
 	# ------------------------------------------------------------------------------
 	# Collect "static" data into a single object for a cleaner interface
 
-	static <- list(
-		wflow = workflow,
-		param_info = param_info,
-		post_estimation = workflows::.workflow_includes_calibration(workflow),
-
-		metrics = metrics,
-		metric_info = mtr_info,
-		y_name = outcome_names(workflow),
-		pred_types = unique(metrics_info(metrics)$type),
-		eval_time = eval_time,
-
-		split_args = split_args,
-		control = control
+	static <- make_static(
+	  workflow,
+	  param_info,
+	  metrics,
+	  eval_time,
+	  split_args,
+	  control
 	)
 
 	tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip", "tailor")
