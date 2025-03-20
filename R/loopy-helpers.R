@@ -451,6 +451,20 @@ get_config_key <- function(grid, wflow) {
 	info <- tune_args(wflow)
 	key <- grid
 
+	only_param <- setdiff(info$id, names(grid))
+	if (length(only_param) > 0) {
+	  cli::cli_abort(
+	    "Some parameters are tagged for tuning but are not in the grid:
+      {.arg {only_param}}", call = NULL)
+	}
+
+  only_grid <- setdiff(names(grid), info$id)
+  if (length(only_grid) > 0) {
+    cli::cli_abort(
+      "Some parameters are in the grid but are not tagged for tuning:
+      {.arg {only_grid}}", call = NULL)
+  }
+
 	pre_param <- info$id[info$source == "recipe"]
 	if (length(pre_param) > 0) {
 		key <- make_config_labs(grid, pre_param) %>%
