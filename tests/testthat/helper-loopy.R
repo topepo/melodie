@@ -18,21 +18,22 @@ dt_spec <- parsnip::decision_tree(
 )
 dt_grid <- tibble::tibble(min_n = c(2, 4))
 
-cls_post <-
-  tailor::tailor() %>%
-  tailor::adjust_probability_threshold(threshold = tune("cut"))
+cls_post <- tailor::tailor() %>%
+	tailor::adjust_probability_threshold(threshold = tune("cut"))
+
+cls_est_post <- tailor::tailor() %>%
+	tailor::adjust_probability_calibration(method = "logistic")
 
 # ------------------------------------------------------------------------------
 
 puromycin <- tibble::as_tibble(Puromycin)
-puromycin_rec <-
-  recipes::recipe(rate ~ ., data = puromycin) %>%
-  recipes::step_dummy(state)
+puromycin_rec <- recipes::recipe(rate ~ ., data = puromycin) %>%
+	recipes::step_dummy(state)
 
-puromycin_tune_rec <-
-  puromycin_rec %>%
-  recipes::step_poly(conc, degree = tune())
+puromycin_tune_rec <- puromycin_rec %>%
+	recipes::step_poly(conc, degree = tune())
 
 knn_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune())
 
-reg_post <- tailor::tailor() %>% tailor::adjust_predictions_custom(.pred = 1 / .pred)
+reg_post <- tailor::tailor() %>%
+	tailor::adjust_predictions_custom(.pred = 1 / .pred)
