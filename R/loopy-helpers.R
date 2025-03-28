@@ -36,6 +36,8 @@ has_mod_param <- function(x) {
 
 # ------------------------------------------------------------------------------
 
+
+# This is run on a `predict_stage` column:
 has_sub_param <- function(x) {
 	not_post_list <- names(x) != "post_stage"
 	has_param_col <- any(not_post_list)
@@ -48,6 +50,7 @@ has_sub_param <- function(x) {
 	two_plus_vals
 }
 
+# This is run on a `predict_stage` column:
 get_sub_param <- function(x) {
 	not_post_list <- names(x) != "post_stage"
 	names(x)[not_post_list]
@@ -55,6 +58,7 @@ get_sub_param <- function(x) {
 
 # ------------------------------------------------------------------------------
 # from workflows
+# nocov start
 has_tailor <- function(x) {
 	"tailor" %in% names(x$post$actions)
 }
@@ -76,6 +80,7 @@ has_tailor_estimated <- function(x) {
 	}
 	res
 }
+# nocov end
 
 # ------------------------------------------------------------------------------
 # Prediction and postprocessing
