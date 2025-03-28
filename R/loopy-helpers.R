@@ -418,7 +418,7 @@ get_data_subsets <- function(wflow, split, split_args = NULL) {
 # pre-allocating predictions
 
 initialize_pred_reserve <- function(predictions, grid_size) {
-	if (tibble::is_tibble(predictions)) {
+	if (!tibble::is_tibble(predictions)) {
 		predictions <- dplyr::as_tibble(predictions)
 	}
 	grid_size <- max(1, grid_size)
