@@ -147,10 +147,10 @@ sched_predict_wrapper <- function(
 	pred
 }
 
-pred_post_strategy <- function(x) {
-	if (has_tailor(x)) {
-		if (has_tailor_tuned(x)) {
-			if (has_tailor_estimated(x)) {
+pred_post_strategy <- function(wflow) {
+	if (has_tailor(wflow)) {
+		if (has_tailor_tuned(wflow)) {
+			if (has_tailor_estimated(wflow)) {
 				res <- "estimation_and_tuning"
 			} else {
 				res <- "no_estimation_but_tuning"
@@ -158,7 +158,7 @@ pred_post_strategy <- function(x) {
 		} else {
 			# Not tuned
 
-			if (has_tailor_estimated(x)) {
+			if (has_tailor_estimated(wflow)) {
 				res <- "estimation_but_no_tuning"
 			} else {
 				res <- "no_estimation_or_tuning"
