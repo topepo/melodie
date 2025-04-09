@@ -25,8 +25,11 @@ cls_est_post <- tailor::tailor() %>%
 	tailor::adjust_probability_calibration(method = "logistic")
 
 # https://github.com/tidymodels/tailor/issues/72
-# cls_cal_tune_post <- tailor::tailor() %>%
-#   tailor::adjust_probability_calibration(method = tune())
+cls_cal_tune_post <- tailor::tailor() %>%
+  tailor::adjust_probability_calibration(method = tune()) %>%
+  tailor::adjust_probability_threshold(threshold = tune("cut"))
+
+
 
 # ------------------------------------------------------------------------------
 

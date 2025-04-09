@@ -15,7 +15,7 @@ loopy <- function(resamples, grid, static) {
 	pred_iter <- 0
 	# TODO add extras and notes
 
-	sched <- get_tune_schedule(static$wflow, static$param_info, grid)
+	sched <- schedule_grid(grid, static$wflow)
 
 	config_tbl <- get_config_key(grid, static$wflow)
 

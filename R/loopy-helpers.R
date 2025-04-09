@@ -4,18 +4,25 @@
 
 # Note: in loop(), we add more elements for the outcome name(s(), and the
 # data partitions
-make_static <- function(workflow, param_info, metrics, eval_time, split_args, control) {
-  list(
-    wflow = workflow,
-    param_info = param_info,
-    post_estimation = workflows::.workflow_includes_calibration(workflow),
-    metrics = metrics,
-    metric_info = tibble::as_tibble(metrics),
-    pred_types = unique(metrics_info(metrics)$type),
-    eval_time = eval_time,
-    split_args = split_args,
-    control = control
-  )
+make_static <- function(
+	workflow,
+	param_info,
+	metrics,
+	eval_time,
+	split_args,
+	control
+) {
+	list(
+		wflow = workflow,
+		param_info = param_info,
+		post_estimation = workflows::.workflow_includes_calibration(workflow),
+		metrics = metrics,
+		metric_info = tibble::as_tibble(metrics),
+		pred_types = unique(metrics_info(metrics)$type),
+		eval_time = eval_time,
+		split_args = split_args,
+		control = control
+	)
 }
 
 # ------------------------------------------------------------------------------
@@ -35,7 +42,6 @@ has_mod_param <- function(x) {
 }
 
 # ------------------------------------------------------------------------------
-
 
 # This is run on a `predict_stage` column:
 has_sub_param <- function(x) {
@@ -91,10 +97,10 @@ has_tailor_estimated <- function(x) {
 # data in the list elements only have the grid values for the submodel
 # parameter (not the whole grid).
 sched_predict_wrapper <- function(
-	sched,
+	sched,              # TODO rename this to be more informative with what stage
 	wflow_current,
 	static,
-	estimation = FALSE
+	estimation = FALSE  # TODO rename this to be more informative
 ) {
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
@@ -172,6 +178,7 @@ pred_post_strategy <- function(wflow) {
 	res
 }
 
+# Prediction when there there is no postprocessor. Submodels are processed too
 predict_only <- function(
 	wflow_current,
 	sched,
