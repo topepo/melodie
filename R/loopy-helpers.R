@@ -93,9 +93,8 @@ has_tailor_estimated <- function(x) {
 
 # TODO add eval_time
 # Basic prediction on a data set (holdout of calibration) including submodels.
-# Note that if there are submodels, the results are in a list column and the
-# data in the list elements only have the grid values for the submodel
-# parameter (not the whole grid).
+# Note that if there are submodels, the results only have the grid values for
+# the submodel parameter (not the whole grid).
 sched_predict_wrapper <- function(
 	sched,              # TODO rename this to be more informative with what stage
 	wflow_current,
@@ -104,13 +103,15 @@ sched_predict_wrapper <- function(
 ) {
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-	if (has_sub_param(sched$predict_stage[[1]])) {
+	has_submodel <- has_sub_param(sched$predict_stage[[1]])
+	if (has_submodel) {
 		sub_param <- get_sub_param(sched$predict_stage[[1]])
 		sub_list <- sched$predict_stage[[1]] %>%
 			dplyr::select(dplyr::all_of(sub_param)) %>%
 			as.list()
 	} else {
 		sub_list <- NULL
+		sub_param <- character(0)
 	}
 
 	if (estimation & static$post_estimation) {
@@ -134,11 +135,19 @@ sched_predict_wrapper <- function(
 			eval_time = static$eval_time,
 			subgrid = sub_list
 		)
-		pred <- vctrs::vec_cbind(pred, tmp_res)
+		tmp_res$.row <- .ind
+		if (has_submodel) {
+		  tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
+		}
+
+		if (is.null(pred)) {
+		  pred <- tmp_res
+		} else {
+		  pred <- dplyr::full_join(pred, tmp_res, by = c(sub_param, ".row"))
+		}
 	}
 
 	pred <- pred %>%
-		dplyr::mutate(.row = .ind) %>%
 		dplyr::full_join(processed_data_pred$outcomes, by = ".row") %>%
 		dplyr::relocate(
 			c(
@@ -188,15 +197,12 @@ predict_only <- function(
 ) {
 	pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
 
-	if (has_sub_param(sched$predict_stage[[1]])) {
-		# The data come in as a list column so unlist and add the rest of the grid.
-		sub_param <- get_sub_param(sched$predict_stage[[1]])
-		pred <- pred %>%
-			tidyr::unnest(.pred) %>%
-			vctrs::vec_cbind(grid %>% dplyr::select(-dplyr::all_of(sub_param)))
-	} else {
-		pred <- pred %>% vctrs::vec_cbind(grid)
+	# When there are submodels, the grid is already in 'pred'. Otherwise merge
+	# them into the predictions
+	if (!has_sub_param(sched$predict_stage[[1]])) {
+	  pred <- vctrs::vec_cbind(pred, grid)
 	}
+
 	pred
 }
 
