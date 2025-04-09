@@ -537,9 +537,10 @@ determine_pred_types <- function(wflow, metrics) {
   pred_types <- unique(metrics_info(metrics)$type)
   if (melodie:::has_tailor(wflow)) {
     post <- extract_postprocessor(wflow)
-    post_types <- purrr::map(post$adjustments, ~ .x$outputs)
-    post_types <- unlist(post_types)
-    post_types[post_types == "probability_class"] <- "prob"
+    post_out <- purrr::map(post$adjustments, ~ .x$outputs)
+    post_in <- purrr::map(post$adjustments, ~ .x$inputs)
+    post_types <- unlist(c(post_out, post_in))
+    post_types[grepl("probability", post_types)] <- "prob"
     post_cls <- purrr::map(post$adjustments, class)
     post_cls <- unlist(post_cls)
     if (any(post_cls == "probability_calibration")) {

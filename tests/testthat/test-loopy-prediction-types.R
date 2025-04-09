@@ -45,7 +45,7 @@ test_that("determinig types of predictions required", {
   wflow_5 <- workflow(class ~ ., dt_spec, just_thresh)
   expect_equal(
     melodie:::determine_pred_types(wflow_5, metric_set(accuracy)),
-    "class"
+    c("class", "prob")
   )
   expect_equal(
     melodie:::determine_pred_types(wflow_5, metric_set(brier_class)),

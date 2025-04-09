@@ -107,7 +107,7 @@ test_that("prediction only, no submodels, classification", {
   static_2 <- static_1
   static_2$metrics <- acc_mtr
   static_2$metric_info <- tibble::as_tibble(acc_mtr)
-  static_2$pred_types <- unique(metrics_info(acc_mtr)$type)
+  static_2$pred_types <- melodie:::determine_pred_types(static_2$wflow, acc_mtr)
 
   res_2 <-
     melodie:::predict_only(
@@ -136,7 +136,7 @@ test_that("prediction only, no submodels, classification", {
   static_3 <- static_1
   static_3$metrics <- brier_mtr
   static_3$metric_info <- tibble::as_tibble(brier_mtr)
-  static_3$pred_types <- unique(metrics_info(brier_mtr)$type)
+  static_3$pred_types <- melodie:::determine_pred_types(static_3$wflow, brier_mtr)
 
   res_3 <-
     melodie:::predict_only(
@@ -286,7 +286,7 @@ test_that("prediction only, with submodels, classification", {
   static_2 <- static_1
   static_2$metrics <- acc_mtr
   static_2$metric_info <- tibble::as_tibble(acc_mtr)
-  static_2$pred_types <- unique(metrics_info(acc_mtr)$type)
+  static_2$pred_types <- melodie:::determine_pred_types(static_2$wflow, acc_mtr)
 
   res_2 <-
     melodie:::predict_only(
@@ -318,7 +318,7 @@ test_that("prediction only, with submodels, classification", {
   static_3 <- static_1
   static_3$metrics <- brier_mtr
   static_3$metric_info <- tibble::as_tibble(brier_mtr)
-  static_3$pred_types <- unique(metrics_info(brier_mtr)$type)
+  static_3$pred_types <- melodie:::determine_pred_types(static_3$wflow, brier_mtr)
 
   res_3 <-
     melodie:::predict_only(
@@ -478,20 +478,21 @@ test_that("post with no estimation, tuning or submodels, classification", {
   static_2 <- static_1
   static_2$metrics <- acc_mtr
   static_2$metric_info <- tibble::as_tibble(acc_mtr)
-  static_2$pred_types <- unique(metrics_info(acc_mtr)$type)
+  static_2$pred_types <- melodie:::determine_pred_types(static_2$wflow, acc_mtr)
 
   res_2 <-
-    melodie:::predict_only(
+    melodie:::post_no_estimation_or_tuning(
       wflow_current = wflow_fit,
       sched = sched$model_stage[[1]][1,],
       grid = dt_grid[1,],
-      static = static_2,
-      estimation = FALSE
+      static = static_2
     )
   plist_2 <-
     tibble(
       Class = two_class_dat$Class[0],
       .pred_class = two_class_dat$Class[0],
+      .pred_Class1 = double(0),
+      .pred_Class2 = double(0),
       .row = integer(0),
       min_n = double(0)
     )
@@ -500,12 +501,12 @@ test_that("post with no estimation, tuning or submodels, classification", {
   expect_equal(res_2$.row, as.integer(rs_split, data = "assessment"))
   expect_equal(unique(res_2$min_n), dt_grid$min_n[1])
 
-  # TODO
-  # https://github.com/tidymodels/tune/issues/942
-  # expect_equal(
-  #   mean(res_2$.pred_class[ge_tenth] == "Class1"),
-  #   1.0
-  # )
+  ge_tenth <- res_2$.pred_Class1 >= 1 / 10
+
+  expect_equal(
+    mean(res_2$.pred_class[ge_tenth] == "Class1"),
+    1.0
+  )
 
   # ------------------------------------------------------------------------------
   # class probabilities only
@@ -514,19 +515,19 @@ test_that("post with no estimation, tuning or submodels, classification", {
   static_3 <- static_1
   static_3$metrics <- brier_mtr
   static_3$metric_info <- tibble::as_tibble(brier_mtr)
-  static_3$pred_types <- unique(metrics_info(brier_mtr)$type)
+  static_3$pred_types <- melodie:::determine_pred_types(static_3$wflow, brier_mtr)
 
   res_3 <-
-    melodie:::predict_only(
+    melodie:::post_no_estimation_or_tuning(
       wflow_current = wflow_fit,
       sched = sched$model_stage[[1]][1,],
       grid = dt_grid[1,],
-      static = static_3,
-      estimation = FALSE
+      static = static_3
     )
   plist_3 <-
     tibble(
       Class = two_class_dat$Class[0],
+      .pred_class = two_class_dat$Class[0],
       .pred_Class1 = double(0),
       .pred_Class2 = double(0),
       .row = integer(0),
@@ -538,6 +539,62 @@ test_that("post with no estimation, tuning or submodels, classification", {
   expect_equal(unique(res_3$min_n), dt_grid$min_n[1])
 
   expect_equal(res_3$.pred_Class1, res_1$.pred_Class1)
+})
+
+test_that("post with no estimation, tuning or submodels, regression", {
+  skip_if_not_installed("kernlab")
+
+  reg_rs <- mc_cv(puromycin, times = 2)
+  rs_split <- reg_rs$splits[[1]]
+  mc_cv_args <- rsample::.get_split_args(reg_rs)
+
+  svm_spec <- svm_poly(mode = "regression", cost = 1, degree = tune())
+
+  wflow <-  workflow(rate ~ ., svm_spec, reg_post)
+  svm_grid <- tibble(degree = 1:2)
+
+  wflow_fit <-
+    wflow %>%
+    finalize_workflow(svm_grid[1,]) %>%
+    .fit_pre(data = analysis(rs_split)) %>%
+    .fit_model(control = control_workflow())
+
+  # ------------------------------------------------------------------------------
+
+  static_1 <- melodie:::make_static(
+    wflow,
+    param_info = wflow %>% extract_parameter_set_dials(),
+    metrics = metric_set(rmse),
+    eval_time = NULL,
+    split_args = mc_cv_args,
+    control = control_resamples()
+  )
+
+  data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+  static_1 <- c(static_1, data_1)
+  static_1$y_name <- "rate"
+
+  sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
+
+  res_1 <-
+    melodie:::post_no_estimation_or_tuning(
+      wflow_current = wflow_fit,
+      sched = sched$model_stage[[1]][1,],
+      grid = svm_grid[1,],
+      static = static_1
+    )
+  plist_1 <-
+    tibble(
+      rate = puromycin$rate[0],
+      .pred = puromycin$rate[0],
+      .row = integer(0),
+      degree = integer(0)
+    )
+  expect_equal(res_1[0,], plist_1)
+  expect_equal(nrow(res_1), nrow(assessment(rs_split)))
+  expect_equal(res_1$.row, as.integer(rs_split, data = "assessment"))
+  expect_equal(unique(res_1$degree), svm_grid$degree[1])
+  expect_true(all(res_1$.pred < 0))
 })
 
 
