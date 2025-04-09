@@ -18,7 +18,7 @@ make_static <- function(
 		post_estimation = workflows::.workflow_includes_calibration(workflow),
 		metrics = metrics,
 		metric_info = tibble::as_tibble(metrics),
-		pred_types = unique(metrics_info(metrics)$type), # TODO write a function for this
+		pred_types = determine_pred_types(workflow, metrics),
 		eval_time = eval_time,
 		split_args = split_args,
 		control = control
@@ -530,3 +530,39 @@ make_config_labs <- function(grid, param, val = "pre") {
 
 	res
 }
+
+determine_pred_types <- function(wflow, metrics) {
+  model_mode <- extract_spec_parsnip(wflow)$mode
+
+  pred_types <- unique(metrics_info(metrics)$type)
+  if (melodie:::has_tailor(wflow)) {
+    post <- extract_postprocessor(wflow)
+    post_types <- purrr::map(post$adjustments, ~ .x$outputs)
+    post_types <- unlist(post_types)
+    post_types[post_types == "probability_class"] <- "prob"
+    post_cls <- purrr::map(post$adjustments, class)
+    post_cls <- unlist(post_cls)
+    if (any(post_cls == "probability_calibration")) {
+      post_types <- c(post_types, "class", "prob")
+    }
+    post_cls <- unique(post_cls)
+    pred_types <- unique(c(pred_types, post_types))
+  }
+
+  if (any(pred_types == "everything")) {
+    if (model_mode == "regression") {
+      pred_types <- c(pred_types, "numeric")
+    } else if (model_mode == "classification") {
+      pred_types <- c(pred_types, "class", "prob")
+    } else if (model_mode == "censored regression") {
+      pred_types <- c(pred_types, "static_survival_metric", "dynamic_survival_metric")
+    } else {
+      cli::cli_abort("No prediction types are known for mode {.val model_mode}.")
+    }
+
+    pred_types <- pred_types[pred_types != "everything"]
+  }
+
+  sort(unique(pred_types))
+}
+
