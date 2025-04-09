@@ -20,6 +20,9 @@ dt_grid <- tibble::tibble(min_n = c(2, 4))
 
 knn_cls_spec <- parsnip::nearest_neighbor(mode = "classification", neighbors = tune())
 
+cls_tenth <- tailor::tailor() %>%
+  tailor::adjust_probability_threshold(threshold = 1 / 10)
+
 cls_post <- tailor::tailor() %>%
 	tailor::adjust_probability_threshold(threshold = tune("cut"))
 

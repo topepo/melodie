@@ -18,7 +18,7 @@ make_static <- function(
 		post_estimation = workflows::.workflow_includes_calibration(workflow),
 		metrics = metrics,
 		metric_info = tibble::as_tibble(metrics),
-		pred_types = unique(metrics_info(metrics)$type),
+		pred_types = unique(metrics_info(metrics)$type), # TODO write a function for this
 		eval_time = eval_time,
 		split_args = split_args,
 		control = control
@@ -218,7 +218,6 @@ predictions <- function(wflow_current, sched, static, grid) {
 	} else if (strategy == "estimation_but_no_tuning") {
 		pred <- post_estimation_but_no_tuning(wflow_current, sched, grid, static)
 	} else {
-		# estimation_and_tuning
 		pred <- post_estimation_and_tuning(wflow_current, sched, grid, static)
 	}
 
