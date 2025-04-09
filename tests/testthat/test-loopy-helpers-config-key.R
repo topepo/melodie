@@ -43,7 +43,7 @@ test_that("set configurations - single element", {
 })
 
 test_that("set configurations - two elements", {
-	wflow_1 <- workflow(puromycin_tune_rec, knn_spec)
+	wflow_1 <- workflow(puromycin_tune_rec, knn_reg_spec)
 	wflow_2 <- workflow(Class ~ ., dt_spec, cls_post)
 	wflow_3 <- workflow(puromycin_tune_rec, logistic_reg(), cls_post)
 

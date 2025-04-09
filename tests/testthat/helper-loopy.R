@@ -18,6 +18,8 @@ dt_spec <- parsnip::decision_tree(
 )
 dt_grid <- tibble::tibble(min_n = c(2, 4))
 
+knn_cls_spec <- parsnip::nearest_neighbor(mode = "classification", neighbors = tune())
+
 cls_post <- tailor::tailor() %>%
 	tailor::adjust_probability_threshold(threshold = tune("cut"))
 
@@ -40,7 +42,7 @@ puromycin_rec <- recipes::recipe(rate ~ ., data = puromycin) %>%
 puromycin_tune_rec <- puromycin_rec %>%
 	recipes::step_poly(conc, degree = tune())
 
-knn_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune())
+knn_reg_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune())
 
 reg_post <- tailor::tailor() %>%
 	tailor::adjust_predictions_custom(.pred = 1 / .pred)

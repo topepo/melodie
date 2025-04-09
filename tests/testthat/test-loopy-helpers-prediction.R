@@ -77,12 +77,10 @@ test_that("prediction only, no submodels, classification", {
 
   sched <- melodie:::schedule_grid(dt_grid, static_1$wflow)
 
-
-
   res_1 <-
     melodie:::predict_only(
       wflow_current = wflow_fit,
-      sched = sched$model_stage[[1]]$predict_stage,
+      sched = sched$model_stage[[1]][1,],
       grid = dt_grid[1,],
       static = static_1,
       estimation = FALSE
@@ -113,7 +111,7 @@ test_that("prediction only, no submodels, classification", {
   res_2 <-
     melodie:::predict_only(
       wflow_current = wflow_fit,
-      sched = sched$model_stage[[1]]$predict_stage,
+      sched = sched$model_stage[[1]][1,],
       grid = dt_grid[1,],
       static = static_2,
       estimation = FALSE
@@ -142,7 +140,7 @@ test_that("prediction only, no submodels, classification", {
   res_3 <-
     melodie:::predict_only(
       wflow_current = wflow_fit,
-      sched = sched$model_stage[[1]]$predict_stage,
+      sched = sched$model_stage[[1]][1,],
       grid = dt_grid[1,],
       static = static_3,
       estimation = FALSE
@@ -162,16 +160,20 @@ test_that("prediction only, no submodels, classification", {
 })
 
 test_that("prediction only, no submodels, regression", {
+  skip_if_not_installed("kernlab")
+
   reg_rs <- mc_cv(puromycin, times = 2)
   rs_split <- reg_rs$splits[[1]]
   mc_cv_args <- rsample::.get_split_args(reg_rs)
 
-  wflow <-  workflow(rate ~ ., knn_spec)
-  knn_grid <- tibble(neighbors = c(10, 20))
+  svm_spec <- svm_poly(mode = "regression", cost = 1, degree = tune())
+
+  wflow <-  workflow(rate ~ ., svm_spec)
+  svm_grid <- tibble(degree = 1:2)
 
   wflow_fit <-
     wflow %>%
-    finalize_workflow(knn_grid[1,]) %>%
+    finalize_workflow(svm_grid[1,]) %>%
     .fit_pre(data = analysis(rs_split)) %>%
     .fit_model(control = control_workflow())
 
@@ -190,13 +192,13 @@ test_that("prediction only, no submodels, regression", {
   static_1 <- c(static_1, data_1)
   static_1$y_name <- "rate"
 
-  sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
+  sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
 
   res_1 <-
     melodie:::predict_only(
       wflow_current = wflow_fit,
-      sched = sched$model_stage[[1]]$predict_stage,
-      grid = knn_grid[1,],
+      sched = sched$model_stage[[1]][1,],
+      grid = svm_grid[1,],
       static = static_1,
       estimation = FALSE
     )
@@ -205,14 +207,12 @@ test_that("prediction only, no submodels, regression", {
       rate = puromycin$rate[0],
       .pred = puromycin$rate[0],
       .row = integer(0),
-      neighbors = double(0)
+      degree = integer(0)
     )
   expect_equal(res_1[0,], plist_1)
   expect_equal(nrow(res_1), nrow(assessment(rs_split)))
   expect_equal(res_1$.row, as.integer(rs_split, data = "assessment"))
-  expect_equal(unique(res_1$neighbors), knn_grid$neighbors[1])
+  expect_equal(unique(res_1$degree), svm_grid$degree[1])
 
 })
-
-
 
