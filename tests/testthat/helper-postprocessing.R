@@ -59,8 +59,25 @@ cls_sim_plist <-
 # ------------------------------------------------------------------------------
 
 dt_grid <- tibble::tibble(min_n = c(2, 4))
-knn_grid <- tibble(neighbors = 1:3)
-svm_grid <- tibble(degree = 1:2)
+knn_grid <- tibble::tibble(neighbors = 1:3)
+svm_grid <- tibble::tibble(degree = 1:2)
+
+make_post_data <- function(mode = "classification") {
+  set.seed(1)
+  if (mode == "classification") {
+    dat <- modeldata::sim_classification(1000)
+    nm <- "class"
+  } else if (mode == "regression") {
+    dat <- modeldata::sim_regression(1000)
+    nm <- "outcome"
+  } else {
+    cli::abort("Only have modes for classification and regression so far")
+  }
+  rs <- rsample::mc_cv(dat, times = 2)
+  rs_split <- rs$splits[[1]]
+  rs_args <- rsample::.get_split_args(rs)
+  list(data = dat, rs = rs, split = rs_split, args = rs_args, y = nm)
+}
 
 # ------------------------------------------------------------------------------
 
@@ -72,10 +89,10 @@ puromycin_tune_rec <- puromycin_rec %>%
 	recipes::step_poly(conc, degree = tune())
 
 knn_reg_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune())
-svm_spec <- svm_poly(mode = "regression", cost = 1, degree = tune())
+svm_spec <- parsnip::svm_poly(mode = "regression", cost = 1, degree = tune())
 
 reg_post <- tailor::tailor() %>%
-	tailor::adjust_predictions_custom(.pred = -.pred)
+	tailor::adjust_predictions_custom(.pred = .pred + 10000)
 
 reg_cal <- tailor::tailor() %>%
   tailor::adjust_numeric_calibration()

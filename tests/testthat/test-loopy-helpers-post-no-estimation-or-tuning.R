@@ -2,16 +2,13 @@ test_that("post with no estimation, tuning or submodels, classification", {
 	skip_if_not_installed("modeldata")
 	skip_if_not_installed("C50")
 
-	data("two_class_dat", package = "modeldata")
-	two_class_rs <- mc_cv(two_class_dat, times = 2)
-	rs_split <- two_class_rs$splits[[1]]
-	mc_cv_args <- rsample::.get_split_args(two_class_rs)
+	cls <- make_post_data()
 
-	wflow <- workflow(Class ~ ., dt_spec, cls_tenth)
+	wflow <- workflow(class ~ ., dt_spec, cls_tenth)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(dt_grid[1, ]) %>%
-		.fit_pre(data = analysis(rs_split)) %>%
+		.fit_pre(data = analysis(cls$split)) %>%
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -22,13 +19,13 @@ test_that("post with no estimation, tuning or submodels, classification", {
 		param_info = wflow %>% extract_parameter_set_dials(),
 		metrics = metric_set(accuracy, brier_class),
 		eval_time = NULL,
-		split_args = mc_cv_args,
+		split_args = cls$args,
 		control = control_resamples()
 	)
 
-	data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
 	static_1 <- c(static_1, data_1)
-	static_1$y_name <- "Class"
+	static_1$y_name <- cls$y
 
 	sched <- melodie:::schedule_grid(dt_grid, static_1$wflow)
 
@@ -38,17 +35,17 @@ test_that("post with no estimation, tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- cls_two_class_plist %>% mutate(min_n = double(0))
+	plist_1 <- cls_sim_plist %>% mutate(min_n = double(0))
 
 	expect_equal(res_1[0, ], plist_1)
-	expect_equal(nrow(res_1), nrow(assessment(rs_split)))
-	expect_equal(res_1$.row, as.integer(rs_split, data = "assessment"))
+	expect_equal(nrow(res_1), nrow(assessment(cls$split)))
+	expect_equal(res_1$.row, as.integer(cls$split, data = "assessment"))
 	expect_equal(unique(res_1$min_n), dt_grid$min_n[1])
 
-	ge_tenth <- res_1$.pred_Class1 >= 1 / 10
+	ge_tenth <- res_1$.pred_class_1 >= 1 / 10
 
 	expect_equal(
-		mean(res_1$.pred_class[ge_tenth] == "Class1"),
+		mean(res_1$.pred_class[ge_tenth] == "class_1"),
 		1.0
 	)
 
@@ -67,17 +64,17 @@ test_that("post with no estimation, tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_2
 	)
-	plist_2 <- cls_two_class_plist %>% mutate(min_n = double(0))
+	plist_2 <- cls_sim_plist %>% mutate(min_n = double(0))
 
 	expect_equal(res_2[0, ], plist_2)
-	expect_equal(nrow(res_2), nrow(assessment(rs_split)))
-	expect_equal(res_2$.row, as.integer(rs_split, data = "assessment"))
+	expect_equal(nrow(res_2), nrow(assessment(cls$split)))
+	expect_equal(res_2$.row, as.integer(cls$split, data = "assessment"))
 	expect_equal(unique(res_2$min_n), dt_grid$min_n[1])
 
-	ge_tenth <- res_2$.pred_Class1 >= 1 / 10
+	ge_tenth <- res_2$.pred_class_1 >= 1 / 10
 
 	expect_equal(
-		mean(res_2$.pred_class[ge_tenth] == "Class1"),
+		mean(res_2$.pred_class[ge_tenth] == "class_1"),
 		1.0
 	)
 
@@ -99,28 +96,26 @@ test_that("post with no estimation, tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_3
 	)
-	plist_3 <- cls_two_class_plist %>% mutate(min_n = double(0))
+	plist_3 <- cls_sim_plist %>% mutate(min_n = double(0))
 
 	expect_equal(res_3[0, ], plist_3)
-	expect_equal(nrow(res_3), nrow(assessment(rs_split)))
-	expect_equal(res_3$.row, as.integer(rs_split, data = "assessment"))
+	expect_equal(nrow(res_3), nrow(assessment(cls$split)))
+	expect_equal(res_3$.row, as.integer(cls$split, data = "assessment"))
 	expect_equal(unique(res_3$min_n), dt_grid$min_n[1])
 
-	expect_equal(res_3$.pred_Class1, res_1$.pred_Class1)
+	expect_equal(res_3$.pred_class_1, res_1$.pred_class_1)
 })
 
 test_that("post with no estimation, tuning or submodels, regression", {
 	skip_if_not_installed("kernlab")
 
-	reg_rs <- mc_cv(puromycin, times = 2)
-	rs_split <- reg_rs$splits[[1]]
-	mc_cv_args <- rsample::.get_split_args(reg_rs)
+	reg <- make_post_data("regression")
 
-	wflow <- workflow(rate ~ ., svm_spec, reg_post)
+	wflow <- workflow(outcome ~ ., svm_spec, reg_post)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(svm_grid[1, ]) %>%
-		.fit_pre(data = analysis(rs_split)) %>%
+		.fit_pre(data = analysis(reg$split)) %>%
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -130,13 +125,13 @@ test_that("post with no estimation, tuning or submodels, regression", {
 		param_info = wflow %>% extract_parameter_set_dials(),
 		metrics = metric_set(rmse),
 		eval_time = NULL,
-		split_args = mc_cv_args,
+		split_args = reg$args,
 		control = control_resamples()
 	)
 
-	data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
 	static_1 <- c(static_1, data_1)
-	static_1$y_name <- "rate"
+	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
 
@@ -146,29 +141,26 @@ test_that("post with no estimation, tuning or submodels, regression", {
 		grid = svm_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- puromycin_plist %>% mutate(degree = integer(0))
+	plist_1 <- reg_sim_plist %>% mutate(degree = integer(0))
 
 	expect_equal(res_1[0, ], plist_1)
-	expect_equal(nrow(res_1), nrow(assessment(rs_split)))
-	expect_equal(res_1$.row, as.integer(rs_split, data = "assessment"))
+	expect_equal(nrow(res_1), nrow(assessment(reg$split)))
+	expect_equal(res_1$.row, as.integer(reg$split, data = "assessment"))
 	expect_equal(unique(res_1$degree), svm_grid$degree[1])
-	expect_true(all(res_1$.pred < 0))
+	expect_true(all(res_1$.pred > 5000))
 })
 
 test_that("post with no estimation or tuning, with submodels, classification", {
 	skip_if_not_installed("modeldata")
 	skip_if_not_installed("kknn")
 
-	data("two_class_dat", package = "modeldata")
-	two_class_rs <- mc_cv(two_class_dat, times = 2)
-	rs_split <- two_class_rs$splits[[1]]
-	mc_cv_args <- rsample::.get_split_args(two_class_rs)
+	cls <- make_post_data()
 
-	wflow <- workflow(Class ~ ., knn_cls_spec, cls_tenth)
+	wflow <- workflow(class ~ ., knn_cls_spec, cls_tenth)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%
-		.fit_pre(data = analysis(rs_split)) %>%
+		.fit_pre(data = analysis(cls$split)) %>%
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -179,13 +171,13 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 		param_info = wflow %>% extract_parameter_set_dials(),
 		metrics = metric_set(accuracy, brier_class),
 		eval_time = NULL,
-		split_args = mc_cv_args,
+		split_args = cls$args,
 		control = control_resamples()
 	)
 
-	data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
 	static_1 <- c(static_1, data_1)
-	static_1$y_name <- "Class"
+	static_1$y_name <- cls$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
@@ -195,20 +187,20 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 		grid = knn_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- cls_two_class_plist %>% mutate(neighbors = double(0))
+	plist_1 <- cls_sim_plist %>% mutate(neighbors = double(0))
 
 	expect_equal(res_1[0, ], plist_1)
-	expect_equal(nrow(res_1), nrow(assessment(rs_split)) * nrow(knn_grid))
+	expect_equal(nrow(res_1), nrow(assessment(cls$split)) * nrow(knn_grid))
 	expect_equal(
 		res_1$.row,
-		rep(as.integer(rs_split, data = "assessment"), each = nrow(knn_grid))
+		rep(as.integer(cls$split, data = "assessment"), each = nrow(knn_grid))
 	)
 	expect_equal(sort(unique(res_1$neighbors)), sort(unique(knn_grid$neighbors)))
 
-	ge_tenth <- res_1$.pred_Class1 >= 1 / 10
+	ge_tenth <- res_1$.pred_class_1 >= 1 / 10
 
 	expect_equal(
-		mean(res_1$.pred_class[ge_tenth] == "Class1"),
+		mean(res_1$.pred_class[ge_tenth] == "class_1"),
 		1.0
 	)
 
@@ -227,20 +219,20 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 		grid = knn_grid[1, ],
 		static = static_2
 	)
-	plist_2 <- cls_two_class_plist %>% mutate(neighbors = double(0))
+	plist_2 <- cls_sim_plist %>% mutate(neighbors = double(0))
 
 	expect_equal(res_2[0, ], plist_2)
-	expect_equal(nrow(res_2), nrow(assessment(rs_split)) * nrow(knn_grid))
+	expect_equal(nrow(res_2), nrow(assessment(cls$split)) * nrow(knn_grid))
 	expect_equal(
 		res_2$.row,
-		rep(as.integer(rs_split, data = "assessment"), each = nrow(knn_grid))
+		rep(as.integer(cls$split, data = "assessment"), each = nrow(knn_grid))
 	)
 	expect_equal(sort(unique(res_2$neighbors)), sort(unique(knn_grid$neighbors)))
 
-	ge_tenth <- res_2$.pred_Class1 >= 1 / 10
+	ge_tenth <- res_2$.pred_class_1 >= 1 / 10
 
 	expect_equal(
-		mean(res_2$.pred_class[ge_tenth] == "Class1"),
+		mean(res_2$.pred_class[ge_tenth] == "class_1"),
 		1.0
 	)
 
@@ -262,31 +254,29 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 		grid = knn_grid[1, ],
 		static = static_3
 	)
-	plist_3 <- cls_two_class_plist %>% mutate(neighbors = double(0))
+	plist_3 <- cls_sim_plist %>% mutate(neighbors = double(0))
 
 	expect_equal(res_3[0, ], plist_3)
-	expect_equal(nrow(res_3), nrow(assessment(rs_split)) * nrow(knn_grid))
+	expect_equal(nrow(res_3), nrow(assessment(cls$split)) * nrow(knn_grid))
 	expect_equal(
 		res_3$.row,
-		rep(as.integer(rs_split, data = "assessment"), each = nrow(knn_grid))
+		rep(as.integer(cls$split, data = "assessment"), each = nrow(knn_grid))
 	)
 	expect_equal(sort(unique(res_3$neighbors)), sort(unique(knn_grid$neighbors)))
 
-	expect_equal(res_3$.pred_Class1, res_1$.pred_Class1)
+	expect_equal(res_3$.pred_class_1, res_1$.pred_class_1)
 })
 
 test_that("post with no estimation or tuning, with submodels, regression", {
 	skip_if_not_installed("kknn")
 
-	reg_rs <- mc_cv(puromycin, times = 2)
-	rs_split <- reg_rs$splits[[1]]
-	mc_cv_args <- rsample::.get_split_args(reg_rs)
+	reg <- make_post_data("regression")
 
-	wflow <- workflow(rate ~ ., knn_reg_spec, reg_post)
+	wflow <- workflow(outcome ~ ., knn_reg_spec, reg_post)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%
-		.fit_pre(data = analysis(rs_split)) %>%
+		.fit_pre(data = analysis(reg$split)) %>%
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -296,13 +286,13 @@ test_that("post with no estimation or tuning, with submodels, regression", {
 		param_info = wflow %>% extract_parameter_set_dials(),
 		metrics = metric_set(rmse),
 		eval_time = NULL,
-		split_args = mc_cv_args,
+		split_args = reg$args,
 		control = control_resamples()
 	)
 
-	data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
 	static_1 <- c(static_1, data_1)
-	static_1$y_name <- "rate"
+	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
@@ -312,14 +302,14 @@ test_that("post with no estimation or tuning, with submodels, regression", {
 		grid = knn_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- puromycin_plist %>% mutate(neighbors = double(0))
+	plist_1 <- reg_sim_plist %>% mutate(neighbors = double(0))
 
 	expect_equal(res_1[0, ], plist_1)
-	expect_equal(nrow(res_1), nrow(assessment(rs_split)) * nrow(knn_grid))
+	expect_equal(nrow(res_1), nrow(assessment(reg$split)) * nrow(knn_grid))
 	expect_equal(
 		res_1$.row,
-		rep(as.integer(rs_split, data = "assessment"), each = nrow(knn_grid))
+		rep(as.integer(reg$split, data = "assessment"), each = nrow(knn_grid))
 	)
 	expect_equal(sort(unique(res_1$neighbors)), sort(unique(knn_grid$neighbors)))
-	expect_true(all(res_1$.pred < 0))
+	expect_true(all(res_1$.pred > 5000))
 })
