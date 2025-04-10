@@ -8,7 +8,6 @@ test_that("post with no estimation, tuning or submodels, classification", {
 	mc_cv_args <- rsample::.get_split_args(two_class_rs)
 
 	wflow <- workflow(Class ~ ., dt_spec, cls_tenth)
-	dt_grid <- tibble(min_n = c(10, 20))
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(dt_grid[1, ]) %>%
@@ -117,10 +116,7 @@ test_that("post with no estimation, tuning or submodels, regression", {
 	rs_split <- reg_rs$splits[[1]]
 	mc_cv_args <- rsample::.get_split_args(reg_rs)
 
-	svm_spec <- svm_poly(mode = "regression", cost = 1, degree = tune())
-
 	wflow <- workflow(rate ~ ., svm_spec, reg_post)
-	svm_grid <- tibble(degree = 1:2)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(svm_grid[1, ]) %>%
@@ -169,7 +165,6 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 	mc_cv_args <- rsample::.get_split_args(two_class_rs)
 
 	wflow <- workflow(Class ~ ., knn_cls_spec, cls_tenth)
-	knn_grid <- tibble(neighbors = 1:3)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%
@@ -288,7 +283,6 @@ test_that("post with no estimation or tuning, with submodels, regression", {
 	mc_cv_args <- rsample::.get_split_args(reg_rs)
 
 	wflow <- workflow(rate ~ ., knn_reg_spec, reg_post)
-	knn_grid <- tibble(neighbors = 1:3)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%

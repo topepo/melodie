@@ -8,7 +8,6 @@ test_that("prediction only, no submodels, classification", {
 	mc_cv_args <- rsample::.get_split_args(two_class_rs)
 
 	wflow <- workflow(Class ~ ., dt_spec)
-	dt_grid <- tibble(min_n = c(10, 20))
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(dt_grid[1, ]) %>%
@@ -63,10 +62,9 @@ test_that("prediction only, no submodels, classification", {
 		static = static_2,
 		estimation = FALSE
 	)
-	plist_2 <-
-	  cls_two_class_plist %>%
-	  mutate(min_n = double(0)) %>%
-	  select(-.pred_Class1, -.pred_Class2)
+	plist_2 <- cls_two_class_plist %>%
+		mutate(min_n = double(0)) %>%
+		select(-.pred_Class1, -.pred_Class2)
 
 	expect_equal(res_2[0, ], plist_2)
 	expect_equal(nrow(res_2), nrow(assessment(rs_split)))
@@ -92,10 +90,9 @@ test_that("prediction only, no submodels, classification", {
 		static = static_3,
 		estimation = FALSE
 	)
-	plist_3 <-
-	  cls_two_class_plist %>%
-	  mutate(min_n = double(0)) %>%
-	  select(-.pred_class)
+	plist_3 <- cls_two_class_plist %>%
+		mutate(min_n = double(0)) %>%
+		select(-.pred_class)
 
 	expect_equal(res_3[0, ], plist_3)
 	expect_equal(nrow(res_3), nrow(assessment(rs_split)))
@@ -110,10 +107,7 @@ test_that("prediction only, no submodels, regression", {
 	rs_split <- reg_rs$splits[[1]]
 	mc_cv_args <- rsample::.get_split_args(reg_rs)
 
-	svm_spec <- svm_poly(mode = "regression", cost = 1, degree = tune())
-
 	wflow <- workflow(rate ~ ., svm_spec)
-	svm_grid <- tibble(degree = 1:2)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(svm_grid[1, ]) %>%
@@ -162,7 +156,6 @@ test_that("prediction only, with submodels, classification", {
 	mc_cv_args <- rsample::.get_split_args(two_class_rs)
 
 	wflow <- workflow(Class ~ ., knn_cls_spec)
-	knn_grid <- tibble(neighbors = 1:3)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%
@@ -220,10 +213,9 @@ test_that("prediction only, with submodels, classification", {
 		static = static_2,
 		estimation = FALSE
 	)
-	plist_2 <-
-	  cls_two_class_plist %>%
-	  mutate(neighbors = double(0)) %>%
-	  select(-matches(".pred_Class[1-2]"))
+	plist_2 <- cls_two_class_plist %>%
+		mutate(neighbors = double(0)) %>%
+		select(-matches(".pred_Class[1-2]"))
 
 	expect_equal(res_2[0, ], plist_2)
 	expect_equal(nrow(res_2), nrow(assessment(rs_split)) * nrow(knn_grid))
@@ -252,10 +244,9 @@ test_that("prediction only, with submodels, classification", {
 		static = static_3,
 		estimation = FALSE
 	)
-	plist_3 <-
-	  cls_two_class_plist %>%
-	  mutate(neighbors = double(0)) %>%
-	  select(-.pred_class)
+	plist_3 <- cls_two_class_plist %>%
+		mutate(neighbors = double(0)) %>%
+		select(-.pred_class)
 
 	expect_equal(res_3[0, ], plist_3)
 	expect_equal(nrow(res_3), nrow(assessment(rs_split)) * nrow(knn_grid))
@@ -274,7 +265,6 @@ test_that("prediction only, with submodels, regression", {
 	mc_cv_args <- rsample::.get_split_args(reg_rs)
 
 	wflow <- workflow(rate ~ ., knn_reg_spec)
-	knn_grid <- tibble(neighbors = 1:3)
 
 	wflow_fit <- wflow %>%
 		finalize_workflow(knn_grid[1, ]) %>%

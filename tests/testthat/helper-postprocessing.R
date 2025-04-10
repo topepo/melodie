@@ -58,6 +58,12 @@ cls_sim_plist <-
 
 # ------------------------------------------------------------------------------
 
+dt_grid <- tibble::tibble(min_n = c(2, 4))
+knn_grid <- tibble(neighbors = 1:3)
+svm_grid <- tibble(degree = 1:2)
+
+# ------------------------------------------------------------------------------
+
 puromycin <- tibble::as_tibble(Puromycin)
 puromycin_rec <- recipes::recipe(rate ~ ., data = puromycin) %>%
 	recipes::step_dummy(state)
@@ -88,13 +94,3 @@ puromycin_plist <- tibble::tibble(
   .pred = puromycin$rate[0],
   .row = integer(0)
 )
-
-# ------------------------------------------------------------------------------
-
-dt_grid <- tibble::tibble(min_n = c(2, 4))
-knn_grid <- tibble(neighbors = 1:3)
-svm_grid <- tibble(degree = 1:2)
-
-make_post_data <- function(mode = "classification") {
-
-}
