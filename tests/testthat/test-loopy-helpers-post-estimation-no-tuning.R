@@ -171,3 +171,71 @@ test_that("post with estimation, no tuning or submodels, regression", {
   expect_equal(unique(res_1$degree), svm_grid$degree[1])
   expect_false(isTRUE(all.equal(res_1$.pred, uncal_pred$.pred)))
 })
+
+
+test_that("post with estimation, no tuning or submodels, classification", {
+  skip_if_not_installed("modeldata")
+  skip_if_not_installed("C50")
+
+
+
+})
+
+test_that("post with estimation, no tuning or submodels, regression", {
+  skip_if_not_installed("kernlab")
+  skip_if_not_installed("modeldata")
+
+  set.seed(1)
+  dat <- modeldata::sim_regression(1000)
+
+  reg_rs <- mc_cv(dat, times = 2)
+  rs_split <- reg_rs$splits[[1]]
+  mc_cv_args <- rsample::.get_split_args(reg_rs)
+
+  wflow <- workflow(outcome ~ ., knn_reg_spec, reg_cal)
+  knn_grid <- tibble(neighbors = 1:3)
+
+  wflow_fit <- wflow %>%
+    finalize_workflow(knn_grid[1, ]) %>%
+    .fit_pre(data = analysis(rs_split)) %>%
+    .fit_model(control = control_workflow())
+
+  # ------------------------------------------------------------------------------
+
+  static_1 <- melodie:::make_static(
+    wflow,
+    param_info = wflow %>% extract_parameter_set_dials(),
+    metrics = metric_set(rmse),
+    eval_time = NULL,
+    split_args = mc_cv_args,
+    control = control_resamples()
+  )
+
+  data_1 <- melodie:::get_data_subsets(wflow, rs_split)
+  static_1 <- c(static_1, data_1)
+  static_1$y_name <- "outcome"
+
+  sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
+
+  uncal_pred <- workflow(outcome ~ ., knn_reg_spec) %>%
+    finalize_workflow(knn_grid[1, ]) %>%
+    fit(data_1$data_fit) %>%
+    predict(new_data = data_1$data_perf)
+
+  res_1 <- melodie:::post_estimation_but_no_tuning(
+    wflow_current = wflow_fit,
+    sched = sched$model_stage[[1]][1, ],
+    grid = knn_grid[1, ],
+    static = static_1
+  )
+  plist_1 <- reg_sim_plist %>% mutate(neighbors = double(0))
+
+  expect_equal(res_1[0, ], plist_1)
+  expect_equal(nrow(res_1), nrow(assessment(rs_split)) * nrow(knn_grid))
+  expect_equal(
+    res_1$.row,
+    rep(as.integer(rs_split, data = "assessment"), each = nrow(knn_grid))
+  )
+  expect_equal(sort(unique(res_1$neighbors)), sort(unique(knn_grid$neighbors)))
+  expect_true(all(res_1$.pred != uncal_pred))
+})
