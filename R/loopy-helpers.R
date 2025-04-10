@@ -148,16 +148,7 @@ sched_predict_wrapper <- function(
 	}
 
 	pred <- pred %>%
-		dplyr::full_join(processed_data_pred$outcomes, by = ".row") %>%
-		dplyr::relocate(
-			c(
-				dplyr::all_of(static$y_name),
-				dplyr::starts_with(".pred"),
-				dplyr::any_of(".eval_time"),
-				.row
-			),
-			.before = dplyr::everything()
-		)
+		dplyr::full_join(processed_data_pred$outcomes, by = ".row")
 
 	pred
 }
@@ -203,7 +194,7 @@ predict_only <- function(
 	  pred <- vctrs::vec_cbind(pred, grid)
 	}
 
-	pred
+	reorder_pred_cols(pred, static$y_name)
 }
 
 predictions <- function(wflow_current, sched, static, grid) {
@@ -227,16 +218,7 @@ predictions <- function(wflow_current, sched, static, grid) {
 		# TODO probably not needed
 		pred <- dplyr::as_tibble(pred)
 	}
-	pred %>%
-		dplyr::relocate(
-			c(
-				dplyr::all_of(static$y_name),
-				dplyr::starts_with(".pred"),
-				dplyr::any_of(".eval_time"),
-				.row
-			),
-			.before = dplyr::everything()
-		)
+	pred
 }
 
 # Get the raw predictions for the calibration and assessment sets, train a single
@@ -268,7 +250,8 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
 			probabilities = c(!!!outputs$probabilities)
 		)
 
-	predict(post_obj, perf_predictions)
+	res <- predict(post_obj, perf_predictions)
+	reorder_pred_cols(res, static$y_name)
 }
 
 # Get the raw predictions for the calibration and assessment sets, looping over
@@ -298,7 +281,7 @@ post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
 			vctrs::vec_cbind(current_post_param)
 		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
 	}
-	post_predictions
+	reorder_pred_cols(post_predictions, static$y_name)
 }
 
 # Get the predictions for the assessment set, "train" a single tailor, then
@@ -318,7 +301,8 @@ post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
 			probabilities = c(!!!outputs$probabilities)
 		)
 
-	predict(post_obj, raw_predictions)
+	pred <- predict(post_obj, raw_predictions)
+	reorder_pred_cols(pred, static$y_name)
 }
 
 # Get the predictions for the assessment set, "train" a single tailor, then
@@ -343,7 +327,7 @@ post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
 			vctrs::vec_cbind(current_post_param)
 		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
 	}
-	post_predictions
+	reorder_pred_cols(post_predictions, static$y_name)
 }
 
 # ------------------------------------------------------------------------------
@@ -567,3 +551,24 @@ determine_pred_types <- function(wflow, metrics) {
   sort(unique(pred_types))
 }
 
+reorder_pred_cols <- function(x, y_name) {
+  # x %>%
+  #   dplyr::relocate(dplyr::any_of(".row"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::any_of(".eval_time"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::matches(".pred_[A-Za-z]"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::matches("^\\.pred_class$"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::matches("^\\.pred_time$"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::matches("^\\.pred$"), .before = dplyr::everything()) %>%
+  #   dplyr::relocate(dplyr::all_of(y_name), .before = dplyr::everything())
+
+  x %>%
+    dplyr::relocate(
+      dplyr::all_of(y_name),
+      dplyr::matches("^\\.pred_time$"),
+      dplyr::matches("^\\.pred$"),
+      dplyr::matches("^\\.pred_class$"),
+      dplyr::matches(".pred_[A-Za-z]"),
+      dplyr::any_of(".eval_time"),
+      dplyr::any_of(".row"),
+      .before = dplyr::everything())
+}

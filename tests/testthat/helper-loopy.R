@@ -8,6 +8,7 @@ library(dplyr)
 library(dials)
 library(rlang)
 library(tailor)
+library(tibble)
 
 # ------------------------------------------------------------------------------
 
@@ -33,7 +34,28 @@ cls_cal_tune_post <- tailor::tailor() %>%
   tailor::adjust_probability_calibration(method = tune()) %>%
   tailor::adjust_probability_threshold(threshold = tune("cut"))
 
+cls_cal <- tailor::tailor() %>%
+  tailor::adjust_probability_calibration()
 
+fac_2c <- structure(integer(0), levels = c("Class1", "Class2"), class = "factor")
+cls_two_class_plist <-
+  tibble::tibble(
+  Class = fac_2c,
+  .pred_class = fac_2c,
+  .pred_Class1 = double(0),
+  .pred_Class2 = double(0),
+  .row = integer(0),
+)
+
+sim_2c <- structure(integer(0), levels = c("class_1", "class_2"), class = "factor")
+cls_sim_plist <-
+  tibble::tibble(
+    class = sim_2c,
+    .pred_class = sim_2c,
+    .pred_class_1 = double(0),
+    .pred_class_2 = double(0),
+    .row = integer(0),
+  )
 
 # ------------------------------------------------------------------------------
 
@@ -54,3 +76,15 @@ reg_cal <- tailor::tailor() %>%
 
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) %>%
 	parsnip::set_engine("glmnet")
+
+reg_sim_plist <- tibble::tibble(
+  outcome = double(0),
+  .pred = double(0),
+  .row = integer(0)
+)
+
+puromycin_plist <- tibble::tibble(
+  rate = puromycin$rate[0],
+  .pred = puromycin$rate[0],
+  .row = integer(0)
+)
