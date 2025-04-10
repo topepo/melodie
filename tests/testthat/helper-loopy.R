@@ -49,5 +49,8 @@ knn_reg_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune(
 reg_post <- tailor::tailor() %>%
 	tailor::adjust_predictions_custom(.pred = -.pred)
 
+reg_cal <- tailor::tailor() %>%
+  tailor::adjust_numeric_calibration()
+
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) %>%
 	parsnip::set_engine("glmnet")
