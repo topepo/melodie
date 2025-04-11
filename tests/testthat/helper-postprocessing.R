@@ -26,6 +26,8 @@ cls_tenth <- tailor::tailor() %>%
 cls_post <- tailor::tailor() %>%
 	tailor::adjust_probability_threshold(threshold = tune("cut"))
 
+thresh_grid <- tibble::tibble(cut = (1:2) / 3)
+
 cls_est_post <- tailor::tailor() %>%
 	tailor::adjust_probability_calibration(method = "logistic")
 
@@ -61,6 +63,7 @@ cls_sim_plist <-
 dt_grid <- tibble::tibble(min_n = c(2, 4))
 knn_grid <- tibble::tibble(neighbors = 1:3)
 svm_grid <- tibble::tibble(degree = 1:2)
+lo_grid <- tibble::tibble(lo = c(1000, 2000))
 
 make_post_data <- function(mode = "classification") {
   set.seed(1)
@@ -90,12 +93,16 @@ puromycin_tune_rec <- puromycin_rec %>%
 
 knn_reg_spec <- parsnip::nearest_neighbor(mode = "regression", neighbors = tune())
 svm_spec <- parsnip::svm_poly(mode = "regression", cost = 1, degree = tune())
+svm_fixed_spec <- parsnip::svm_poly(mode = "regression", cost = 1, degree = 1)
 
 reg_post <- tailor::tailor() %>%
 	tailor::adjust_predictions_custom(.pred = .pred + 10000)
 
 reg_cal <- tailor::tailor() %>%
   tailor::adjust_numeric_calibration()
+
+reg_lower <- tailor::tailor() %>%
+  tailor::adjust_numeric_range(lower_limit = tune("lo"))
 
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) %>%
 	parsnip::set_engine("glmnet")

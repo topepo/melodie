@@ -100,7 +100,7 @@ test_that("prediction only, no submodels, classification", {
 test_that("prediction only, no submodels, regression", {
 	skip_if_not_installed("kernlab")
 
-  reg <- make_post_data("regression")
+	reg <- make_post_data("regression")
 
 	wflow <- workflow(outcome ~ ., svm_spec)
 

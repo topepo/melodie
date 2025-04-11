@@ -294,8 +294,7 @@ post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
 	post_obj <- wflow_current %>%
 		hardhat::extract_postprocessor() %>%
 		fit(
-			# The data are not used for estimation, so save time with plist
-			.data = raw_predictions[0, ],
+			.data = raw_predictions,
 			outcome = !!outputs$outcome[[1]],
 			estimate = !!outputs$estimate[[1]],
 			probabilities = c(!!!outputs$probabilities)
@@ -309,22 +308,29 @@ post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
 # apply it to all of the data
 post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
 	post_obj <- hardhat::extract_postprocessor(wflow_current)
-	post_id <- setdiff(static$param_info$id, names(grid))
 
+	# Get unique set of post-processing combinations to loop over
 	post_candidates <- sched$predict_stage[[1]] %>%
 		tidyr::unnest(cols = c(post_stage)) %>%
-		dplyr::select(dplyr::all_of(post_id)) %>%
+		dplyr::select(dplyr::any_of(static$param_info$id)) %>%
 		dplyr::distinct()
+
+	post_id <- names(post_candidates)
+
+	# We need to attach the grid to the results so collect parameters
+	# unrelated to postprocessing (there should be only 1 row in `grid`)
+
+	non_post_grid <- dplyr::select(grid, -dplyr::all_of(!!!post_id))
 
 	post_predictions <- NULL
 	for (j in 1:nrow(post_candidates)) {
 		current_post_param <- post_candidates[j, ]
+		tmp_grid <- vctrs::vec_cbind(non_post_grid, current_post_param)
 
 		# Finalize current tailor with parameters and stuff back in the workflow
 		tmp_post <- finalize_tailor(post_obj, current_post_param)
 		tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-		tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) %>%
-			vctrs::vec_cbind(current_post_param)
+		tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, tmp_grid, static)
 		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
 	}
 	reorder_pred_cols(post_predictions, static$y_name)
