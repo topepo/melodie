@@ -22,7 +22,7 @@ loopy <- function(resamples, grid, static) {
 	# Append data partitions here; these are the same for the duration of this function
 	static <- c(static, get_data_subsets(static$wflow, split, static$split_args))
 	# Now that we have data, determine the names of the outcome data
-	static$y_name <- outcome_names(workflow, data = split$data)
+	static$y_name <- outcome_names(static$wflow, data = split$data)
 
 	# ----------------------------------------------------------------------------
 	# Iterate over preprocessors
