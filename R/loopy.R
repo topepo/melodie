@@ -31,7 +31,13 @@ loopy <- function(resamples, grid, static) {
 
 	for (pre in seq_len(num_pre_iter)) {
 		current_pre <- sched[pre, ]
-		current_wflow <- pre_update_fit(static$wflow, current_pre, static)
+		current_wflow <- .catch_and_log(
+			pre_update_fit(static$wflow, current_pre, static)
+		)
+		if (is_failure(current_wflow)) {
+			next
+		}
+
 		num_mod_iter <- nrow(current_pre$model_stage[[1]])
 
 		# --------------------------------------------------------------------------
@@ -39,7 +45,13 @@ loopy <- function(resamples, grid, static) {
 
 		for (mod in seq_len(num_mod_iter)) {
 			current_model <- current_pre$model_stage[[1]][mod, ]
-			current_wflow <- model_update_fit(current_wflow, current_model)
+
+			current_wflow <- .catch_and_log(
+        model_update_fit(current_wflow, current_model)
+			)
+  		if (is_failure(current_wflow)) {
+	  		next
+	  	}
 
 			num_pred_iter <- nrow(current_model$predict_stage[[1]])
 			current_grid <- rebind_grid(current_pre, current_model)
@@ -47,13 +59,17 @@ loopy <- function(resamples, grid, static) {
 			# ------------------------------------------------------------------------
 			# Iterate over predictions and postprocessors
 
-			pred <- predictions(
-				wflow_current = current_wflow,
-				sched = current_model,
-				static = static,
-				grid = current_grid
-			)
-
+			pred <- .catch_and_log(
+				predictions(
+			  	wflow_current = current_wflow,
+			  	sched = current_model,
+			  	static = static,
+			  	grid = current_grid
+			  )
+		  )
+  		if (is_failure(pred)) {
+	  		next
+	  	}
 			# ------------------------------------------------------------------------
 			# Allocate predictions to an overall object
 
@@ -62,17 +78,21 @@ loopy <- function(resamples, grid, static) {
 		} # model loop
 	} # pre loop
 
-	all_metrics <- pred_reserve %>%
-		dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
-		tune:::.estimate_metrics(
-			metric = static$metrics,
-			param_names = static$param_info$id,
-			outcome_name = static$y_name,
-			event_level = static$control$event_level,
-			metrics_info = tune:::metrics_info(static$metrics) # static$metric_info TODO fix
-		) %>%
-		dplyr::full_join(config_tbl, by = static$param_info$id) %>%
-		dplyr::arrange(.config)
+	if (is.null(pred_reserve)) {
+		all_metrics <- NULL 
+	} else {
+		all_metrics <- pred_reserve %>%
+			dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
+			tune:::.estimate_metrics(
+			  metric = static$metrics,
+			  param_names = static$param_info$id,
+			  outcome_name = static$y_name,
+			  event_level = static$control$event_level,
+			  metrics_info = tune:::metrics_info(static$metrics) # static$metric_info TODO fix
+		  ) %>%
+			dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+				dplyr::arrange(.config)
+	}
 
 	# ----------------------------------------------------------------------------
 	# Return the results
