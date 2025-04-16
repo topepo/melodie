@@ -9,8 +9,7 @@ test_that("preprocessor error doesn't stop grid", {
   exp <- bind_cols(
     folds,
     tibble(
-      .metrics = list(NULL),
-      .notes = list(tibble())
+      .metrics = list(NULL)
     )
   )
 
@@ -23,10 +22,14 @@ test_that("preprocessor error doesn't stop grid", {
   )
 
   expect_identical(
-    res_fit, 
+    dplyr::select(res_fit, -.notes), 
     exp,
     ignore_attr = TRUE
   )
+
+  expect_identical(nrow(res_fit$.notes[[1]]), 1L)
+  expect_identical(ncol(res_fit$.notes[[1]]), 3L)
+  expect_true(all(vapply(res_fit$.notes[[1]], is.character, logical(1))))
 })
 
 test_that("model error doesn't stop grid", {
@@ -40,8 +43,7 @@ test_that("model error doesn't stop grid", {
   exp <- bind_cols(
     folds,
     tibble(
-      .metrics = list(NULL),
-      .notes = list(tibble())
+      .metrics = list(NULL)
     )
   )
 
@@ -49,7 +51,7 @@ test_that("model error doesn't stop grid", {
   mod_spec <- parsnip::nearest_neighbor("regression", "kknn", dist_power = tune())
 
   wf_spec <- workflow(rec_spec, mod_spec)
-  
+
   res_fit <- melodie_grid(
     wf_spec,
     folds,
@@ -58,10 +60,14 @@ test_that("model error doesn't stop grid", {
   )
 
   expect_identical(
-    res_fit, 
+    dplyr::select(res_fit, -.notes), 
     exp,
     ignore_attr = TRUE
   )
+
+  expect_identical(nrow(res_fit$.notes[[1]]), 2L)
+  expect_identical(ncol(res_fit$.notes[[1]]), 3L)
+  expect_true(all(vapply(res_fit$.notes[[1]], is.character, logical(1))))
 })
 
 test_that("prediction error doesn't stop grid", {
@@ -78,8 +84,7 @@ test_that("prediction error doesn't stop grid", {
   exp <- bind_cols(
     folds,
     tibble(
-      .metrics = list(NULL),
-      .notes = list(tibble())
+      .metrics = list(NULL)
     )
   )
 
@@ -96,8 +101,12 @@ test_that("prediction error doesn't stop grid", {
   )
 
   expect_identical(
-    res_fit, 
+    dplyr::select(res_fit, -.notes), 
     exp,
     ignore_attr = TRUE
   )
+
+  expect_identical(nrow(res_fit$.notes[[1]]), 2L)
+  expect_identical(ncol(res_fit$.notes[[1]]), 3L)
+  expect_true(all(vapply(res_fit$.notes[[1]], is.character, logical(1))))
 })
