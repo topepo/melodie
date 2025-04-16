@@ -88,9 +88,6 @@ tune_grid_loop_new <- function(
 			dplyr::full_join(resamples, by = id_cols)
 	}
 
-	# TODO faking notes
-	res$.notes <- purrr::map(1:nrow(res), ~tibble::tibble())
-
 	res <- res %>%
 		dplyr::relocate(
 			splits,

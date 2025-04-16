@@ -13,6 +13,11 @@ loopy <- function(resamples, grid, static) {
 
 	pred_reserve <- NULL
 	pred_iter <- 0
+	notes <- tibble::tibble(
+		location = character(),
+		type = character(),
+		note = character()
+	)
 	# TODO add extras and notes
 
 	sched <- schedule_grid(grid, static$wflow)
@@ -34,8 +39,13 @@ loopy <- function(resamples, grid, static) {
 		current_wflow <- .catch_and_log(
 			pre_update_fit(static$wflow, current_pre, static)
 		)
-		if (is_failure(current_wflow)) {
-			next
+		if (has_log_notes(current_wflow)) {
+			location <- glue::glue("preprocessor {pre}/{num_pre_iter}")
+			notes <- append_log_notes(notes, current_wflow, location)
+			if (is_failure(current_wflow)) {
+				next
+			}
+			current_wflow <- remove_log_notes(current_wflow)
 		}
 
 		num_mod_iter <- nrow(current_pre$model_stage[[1]])
@@ -49,9 +59,14 @@ loopy <- function(resamples, grid, static) {
 			current_wflow <- .catch_and_log(
         model_update_fit(current_wflow, current_model)
 			)
-  		if (is_failure(current_wflow)) {
-	  		next
-	  	}
+			if (has_log_notes(current_wflow)) {
+				location <- glue::glue("model {mod}/{num_mod_iter}")
+				notes <- append_log_notes(notes, current_wflow, location)
+				if (is_failure(current_wflow)) {
+					next
+				}
+				current_wflow <- remove_log_notes(current_wflow)
+			}
 
 			num_pred_iter <- nrow(current_model$predict_stage[[1]])
 			current_grid <- rebind_grid(current_pre, current_model)
@@ -67,9 +82,14 @@ loopy <- function(resamples, grid, static) {
 			  	grid = current_grid
 			  )
 		  )
-  		if (is_failure(pred)) {
-	  		next
-	  	}
+			if (has_log_notes(pred)) {
+				location <- glue::glue("prediction {mod}/{num_mod_iter}")
+				notes <- append_log_notes(notes, pred, location)
+				if (is_failure(pred)) {
+					next
+				}
+				pred <- remove_log_notes(pred)
+			}
 			# ------------------------------------------------------------------------
 			# Allocate predictions to an overall object
 
@@ -97,7 +117,10 @@ loopy <- function(resamples, grid, static) {
 	# ----------------------------------------------------------------------------
 	# Return the results
 
-	return_list <- tibble::tibble(.metrics = list(all_metrics)) %>%
+	return_list <- tibble::tibble(
+		.metrics = list(all_metrics),
+		.notes = list(notes)
+	) %>%
 		vctrs::vec_cbind(split_labs)
 
 	if (static$control$save_pred) {
