@@ -1,6 +1,6 @@
 .catch_and_log <- function(.expr) {
   tmp <- catcher(.expr)
-  tmp$res
+  tmp
 }
 
 catcher <- function(expr) {
@@ -13,7 +13,8 @@ catcher <- function(expr) {
     withCallingHandlers(warning = add_cond, expr), 
     silent = TRUE
   )
-  list(res = res, signals = signals)
+  attr(res, "notes") <- signals
+  res
 }
 
 is_failure <- function(x) {
@@ -21,20 +22,29 @@ is_failure <- function(x) {
 }
 
 has_log_notes <- function(x) {
-  is_failure(x)
-  #"notes" %in% names(attributes(x))
+  is_failure(x) || NROW(attr(x, "notes")) > 0
 }
 
 append_log_notes <- function(notes, x, location) {
+
   if (is_failure(x)) {
-    note <- attr(x, "condition")$message
+    type <- "error"
+    x <- attr(x, 'condition')
+
+    if (is.null(x$parent)) {
+      note <- x$message
+    } else {
+      note <- x$parent$message
+    }
   } else {
+    type <- "warning"
     note <- attr(x, "notes")
+    note <- note[[1]]$message
   }
   tibble::add_row(
     notes, 
-    location = location,
-    type = "error",
+    location = unclass(location),
+    type = type,
     note = note
   )
 }
