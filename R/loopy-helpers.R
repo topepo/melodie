@@ -254,6 +254,8 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
 	reorder_pred_cols(res, static$y_name)
 }
 
+# TODO document where the model is actually fit
+
 # Get the raw predictions for the calibration and assessment sets, looping over
 # tuning parameters to train tailors, then apply them to the assessment data
 post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
