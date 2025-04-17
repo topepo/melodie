@@ -20,7 +20,9 @@ loopy <- function(resamples, grid, static) {
 	config_tbl <- get_config_key(grid, static$wflow)
 
 	# Append data partitions here; these are the same for the duration of this function
-	static <- c(static, get_data_subsets(static$wflow, split, static$split_args))
+	data_splits <- get_data_subsets(static$wflow, split, static$split_args)
+	static <- update_static(static, data_splits)
+
 	# Now that we have data, determine the names of the outcome data
 	static$y_name <- outcome_names(static$wflow, data = split$data)
 
@@ -79,7 +81,7 @@ loopy <- function(resamples, grid, static) {
 	} # pre loop
 
 	if (is.null(pred_reserve)) {
-		all_metrics <- NULL 
+		all_metrics <- NULL
 	} else {
 		all_metrics <- pred_reserve %>%
 			dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%

@@ -24,20 +24,20 @@ test_that("post with estimation, no tuning or submodels, classification", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- "class"
 
 	sched <- melodie:::schedule_grid(dt_grid, static_1$wflow)
 
 	uncal_fit <- workflow(class ~ ., dt_spec) %>%
 		finalize_workflow(dt_grid[1, ]) %>%
-		fit(data_1$data_fit)
+		fit(data_1$fit$data)
 
 	uncal_pred <- uncal_fit %>%
-		predict(new_data = data_1$data_perf)
+		predict(new_data = data_1$pred$data)
 
 	uncal_prob <- uncal_fit %>%
-		predict(new_data = data_1$data_perf, type = "prob")
+		predict(new_data = data_1$pred$data, type = "prob")
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
 		wflow_current = wflow_fit,
@@ -50,7 +50,7 @@ test_that("post with estimation, no tuning or submodels, classification", {
 
 	expect_equal(nrow(res_1), nrow(assessment(cls$split)))
 	expect_equal(res_1$.row, as.integer(cls$split, data = "assessment"))
-	expect_equal(data_1$ind_perf, as.integer(cls$split, data = "assessment"))
+	expect_equal(data_1$pred$ind, as.integer(cls$split, data = "assessment"))
 	expect_equal(unique(res_1$min_n), dt_grid$min_n[1])
 	expect_false(isTRUE(all.equal(res_1$.pred_class_1, uncal_prob$.pred_class_1)))
 	expect_false(isTRUE(all.equal(res_1$.pred_class, uncal_pred$.pred_class)))
@@ -130,15 +130,15 @@ test_that("post with estimation, no tuning or submodels, regression", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
 
 	uncal_pred <- workflow(outcome ~ ., svm_spec) %>%
 		finalize_workflow(svm_grid[1, ]) %>%
-		fit(data_1$data_fit) %>%
-		predict(new_data = data_1$data_perf)
+		fit(data_1$fit$data) %>%
+		predict(new_data = data_1$pred$data)
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
 		wflow_current = wflow_fit,
@@ -151,7 +151,7 @@ test_that("post with estimation, no tuning or submodels, regression", {
 	expect_equal(res_1[0, ], plist_1)
 	expect_equal(nrow(res_1), nrow(assessment(reg$split)))
 	expect_equal(res_1$.row, as.integer(reg$split, data = "assessment"))
-	expect_equal(data_1$ind_perf, as.integer(reg$split, data = "assessment"))
+	expect_equal(data_1$pred$ind, as.integer(reg$split, data = "assessment"))
 	expect_equal(unique(res_1$degree), svm_grid$degree[1])
 	expect_false(isTRUE(all.equal(res_1$.pred, uncal_pred$.pred)))
 })
@@ -182,20 +182,20 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- cls$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
 	uncal_fit <- workflow(class ~ ., dt_spec) %>%
 	  finalize_workflow(dt_grid[1, ]) %>%
-	  fit(data_1$data_fit)
+	  fit(data_1$fit$data)
 
 	uncal_pred <- uncal_fit %>%
-	  predict(new_data = data_1$data_perf)
+	  predict(new_data = data_1$pred$data)
 
 	uncal_prob <- uncal_fit %>%
-	  predict(new_data = data_1$data_perf, type = "prob")
+	  predict(new_data = data_1$pred$data, type = "prob")
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
 	  wflow_current = wflow_fit,
@@ -296,15 +296,15 @@ test_that("post with estimation, no tuning, with submodels, regression", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
 	uncal_pred <- workflow(outcome ~ ., knn_reg_spec) %>%
 		finalize_workflow(knn_grid[1, ]) %>%
-		fit(data_1$data_fit) %>%
-		predict(new_data = data_1$data_perf)
+		fit(data_1$fit$data) %>%
+		predict(new_data = data_1$pred$data)
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
 		wflow_current = wflow_fit,

@@ -10,8 +10,24 @@ make_static <- function(
 	metrics,
 	eval_time,
 	split_args,
-	control
+	control,
+	data = list(fit = NULL, pred = NULL, cal = NULL)
 ) {
+
+  # check inputs
+  if (!inherits(workflow, "workflow")) {
+    cli::cli_abort("{.arg workflow} should be a {.cls workflow} object")
+  }
+  if (!inherits(param_info, "parameters")) {
+    cli::cli_abort("{.arg param_info} should be a {.cls parameters} object")
+  }
+  if (!inherits(metrics, "metric_set")) {
+    cli::cli_abort("{.arg metrics} should be a {.cls metric_set} object")
+  }
+  if (!check_class_or_null(eval_time, "numeric")) {
+    cli::cli_abort("{.arg eval_time} should be a numeric vector.")
+  }
+
 	list(
 		wflow = workflow,
 		param_info = param_info,
@@ -21,8 +37,72 @@ make_static <- function(
 		pred_types = determine_pred_types(workflow, metrics),
 		eval_time = eval_time,
 		split_args = split_args,
-		control = control
+		control = control,
+		data = data
 	)
+}
+
+check_static_data <- function(x, elem = "fit") {
+  if (is.null(x)) {
+    return(x)
+  }
+
+  nms <- sort(names(x))
+  if (!identical(nms, c("data", "ind"))) {
+    cli::cli_abort("{.arg data_*} arguments should have names {.val data} and
+                   {.val ind}, not {.val {nms}} in the {.arg {elem}} slot.")
+  }
+
+  if (!is.integer(x[["ind"]])) {
+    cli::cli_abort("Element {.arg ind} should be an integer in the
+                   {.arg {elem}} slot.")
+  }
+
+  if (!tibble::is_tibble(x[["data"]])) {
+    cli::cli_abort("Element {.arg data} should be a tibble in the {.arg {elem}}
+                   slot")
+  }
+
+  x
+}
+
+get_data_subsets <- function(wflow, split, split_args = NULL) {
+  fit_lst <- pred_lst <- cal_lst <- list(data = NULL, ind = NULL)
+  pred_lst$data <- rsample::assessment(split)
+  pred_lst$ind <- as.integer(split, data = "assessment")
+  if (workflows::.workflow_includes_calibration(wflow)) {
+    # if the workflow has a postprocessor that needs training (i.e. calibration),
+    # further split the analysis data into an "inner" analysis and
+    # assessment set.
+    # * the preprocessor and model (excluding the post-processor) are fitted
+    #   on `analysis(inner_split(split))`, the inner analysis set (just
+    #   referred to as analysis)
+    # * that model generates predictions on `assessment(inner_split(split))`,
+    #   the calibration set
+    # * the post-processor is trained on the predictions generated from the
+    #   calibration set
+    # * the model (including the post-processor) generates predictions on the
+    #   assessment set and those predictions are assessed with performance metrics
+    split <- rsample::inner_split(split, split_args = split_args)
+
+    cal_lst$ind <- as.integer(split, data = "assessment")
+    cal_lst$data <- vctrs::vec_slice(split$data, cal_lst$ind)
+  } else {
+    cal_lst <- NULL
+  }
+
+  fit_lst$data <- rsample::analysis(split)
+  fit_lst$ind <- as.integer(split, data = "analysis")
+  list(fit = fit_lst, pred = pred_lst, cal = cal_lst)
+}
+
+update_static <- function(x, data) {
+
+  check_static_data(data$fit)
+  check_static_data(data$pred)
+  check_static_data(data$cal)
+  x$data <- data
+  x
 }
 
 # ------------------------------------------------------------------------------
@@ -115,11 +195,11 @@ sched_predict_wrapper <- function(
 	}
 
 	if (estimation & static$post_estimation) {
-		.data <- static$data_cal
-		.ind <- static$ind_cal
+		.data <- static$data$cal$data
+		.ind <- static$data$cal$ind
 	} else {
-		.data <- static$data_perf
-		.ind <- static$ind_perf
+		.data <- static$data$pred$data
+		.ind <- static$data$pred$ind
 	}
 
 	processed_data_pred <- forge_from_workflow(.data, wflow_current)
@@ -347,7 +427,7 @@ pre_update_fit <- function(wflow_current, grid, static) {
 			wflow_current <- set_workflow_recipe(wflow_current, pre_proc)
 		}
 	}
-	workflows::.fit_pre(wflow_current, static$data_fit)
+	workflows::.fit_pre(wflow_current, static$data$fit$data)
 }
 
 model_update_fit <- function(wflow_current, grid) {
@@ -379,35 +459,6 @@ get_output_columns <- function(x, syms = FALSE) {
 	pred_cols <- parsnip::.get_prediction_column_names(x, syms = TRUE)
 	res <- c(list(outcome = rlang::syms(outcome_names(x))), pred_cols)
 	res
-}
-
-get_data_subsets <- function(wflow, split, split_args = NULL) {
-	dat <- list(
-		data_perf = rsample::assessment(split),
-		ind_perf = as.integer(split, data = "assessment")
-	)
-	if (workflows::.workflow_includes_calibration(wflow)) {
-		# if the workflow has a postprocessor that needs training (i.e. calibration),
-		# further split the analysis data into an "inner" analysis and
-		# assessment set.
-		# * the preprocessor and model (excluding the post-processor) are fitted
-		#   on `analysis(inner_split(split))`, the inner analysis set (just
-		#   referred to as analysis)
-		# * that model generates predictions on `assessment(inner_split(split))`,
-		#   the calibration set
-		# * the post-processor is trained on the predictions generated from the
-		#   calibration set
-		# * the model (including the post-processor) generates predictions on the
-		#   assessment set and those predictions are assessed with performance metrics
-		split <- rsample::inner_split(split, split_args = split_args)
-
-		dat$ind_cal <- as.integer(split, data = "assessment")
-		dat$data_cal <- vctrs::vec_slice(split$data, dat$ind_cal)
-	}
-
-	dat$data_fit <- rsample::analysis(split)
-	dat$ind_fit <- as.integer(split, data = "analysis")
-	dat
 }
 
 # ------------------------------------------------------------------------------
