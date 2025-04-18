@@ -24,7 +24,7 @@ test_that("post with no estimation, tuning or submodels, classification", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- cls$y
 
 	sched <- melodie:::schedule_grid(dt_grid, static_1$wflow)
@@ -130,7 +130,7 @@ test_that("post with no estimation, tuning or submodels, regression", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
@@ -176,7 +176,7 @@ test_that("post with no estimation or tuning, with submodels, classification", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, cls$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- cls$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
@@ -291,7 +291,7 @@ test_that("post with no estimation or tuning, with submodels, regression", {
 	)
 
 	data_1 <- melodie:::get_data_subsets(wflow, reg$split)
-	static_1 <- c(static_1, data_1)
+	static_1 <- melodie:::update_static(static_1, data_1)
 	static_1$y_name <- reg$y
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)

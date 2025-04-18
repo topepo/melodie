@@ -80,18 +80,15 @@ tune_grid_loop_new <- function(
 	} else {
 		# Clean up for variable columns and make into a function
 		pool_cols <- grep("^\\.", names(res), value = TRUE)
-		res <- res |>
+		res <- res %>%
 			dplyr::summarize(
 				dplyr::across(dplyr::matches("^\\."), ~list(purrr::list_rbind(.x))),
 				.by = c(!!!id_cols)
-			) |>
+			) %>%
 			dplyr::full_join(resamples, by = id_cols)
 	}
 
-	# TODO faking notes
-	res$.notes <- purrr::map(1:nrow(res), ~tibble::tibble())
-
-	res <- res |>
+	res <- res %>%
 		dplyr::relocate(
 			splits,
 			dplyr::starts_with("id"),

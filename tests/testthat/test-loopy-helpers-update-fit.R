@@ -17,11 +17,12 @@ test_that("pre_update_fit() with formulas", {
 		split_args = rsample::.get_split_args(two_class_rs),
 		control = control_grid()
 	)
-	form_stc <- c(
+	form_stc <- melodie:::update_static(
 		form_stc,
-		melodie:::get_data_subsets(form_stc$wflow, rs_split, form_stc$split_args),
-		y_name = "Class"
+		melodie:::get_data_subsets(form_stc$wflow, rs_split, form_stc$split_args)
 	)
+	form_stc$y_name <- "Class"
+
 
 	form_res <- melodie:::pre_update_fit(form_wflow, dt_grid, form_stc)
 	expect_s3_class(form_res, "workflow")
@@ -53,7 +54,7 @@ test_that("pre_update_fit() with recipes", {
 		split_args = rsample::.get_split_args(two_class_rs),
 		control = control_grid()
 	)
-	rec_stc <- c(
+	rec_stc <- melodie:::update_static(
 		rec_stc,
 		melodie:::get_data_subsets(rec_stc$wflow, rs_split, rec_stc$split_args)
 	)
@@ -90,7 +91,7 @@ test_that("pre_update_fit() with tuned recipes", {
 		split_args = rsample::.get_split_args(two_class_rs),
 		control = control_grid()
 	)
-	rec_stc <- c(
+	rec_stc <- melodie:::update_static(
 		rec_stc,
 		melodie:::get_data_subsets(rec_stc$wflow, rs_split, rec_stc$split_args)
 	)
@@ -127,7 +128,7 @@ test_that("pre_update_fit() with selectors", {
 		split_args = rsample::.get_split_args(two_class_rs),
 		control = control_grid()
 	)
-	vars_stc <- c(
+	vars_stc <- melodie:::update_static(
 		vars_stc,
 		melodie:::get_data_subsets(vars_stc$wflow, rs_split, vars_stc$split_args)
 	)
@@ -158,7 +159,7 @@ test_that("model_update_fit() for classification", {
 		split_args = rsample::.get_split_args(two_class_rs),
 		control = control_grid()
 	)
-	dt_stc <- c(
+	dt_stc <- melodie:::update_static(
 		dt_stc,
 		melodie:::get_data_subsets(dt_stc$wflow, rs_split, dt_stc$split_args)
 	)
