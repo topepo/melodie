@@ -209,8 +209,8 @@ make_submod_arg <- function(grid, model, submodels) {
 	# Assumes only one submodel parameter per model
 	real_name <- parsnip::get_from_env(
 		paste(class(model$spec)[1], "args", sep = "_")
-	) %>%
-		dplyr::filter(has_submodel & engine == model$spec$engine) %>%
+	) |>
+		dplyr::filter(has_submodel & engine == model$spec$engine) |>
 		dplyr::pull(parsnip)
 	names(submodels) <- real_name
 	submodels
@@ -220,8 +220,8 @@ make_rename_arg <- function(grid, model, submodels) {
 	# Assumes only one submodel parameter per model
 	real_name <- parsnip::get_from_env(
 		paste(class(model$spec)[1], "args", sep = "_")
-	) %>%
-		dplyr::filter(has_submodel & engine == model$spec$engine) %>%
+	) |>
+		dplyr::filter(has_submodel & engine == model$spec$engine) |>
 		dplyr::pull(parsnip)
 	res <- list(real_name)
 	names(res) <- names(submodels)
@@ -337,13 +337,13 @@ compute_grid_info <- function(workflow, grid) {
 	# Create an order of execution to train the preprocessor (if any). This will
 	# define a loop over any preprocessing tuning parameter combinations.
 	if (any_parameters_preprocessor) {
-		pp_df <- dplyr::distinct(res, !!!syms_pre) %>%
-			dplyr::arrange(!!!syms_pre) %>%
+		pp_df <- dplyr::distinct(res, !!!syms_pre) |>
+			dplyr::arrange(!!!syms_pre) |>
 			dplyr::mutate(
 				.iter_preprocessor = dplyr::row_number(),
 				.lab_pre = recipes::names0(max(dplyr::n()), "Preprocessor")
 			)
-		res <- dplyr::full_join(res, pp_df, by = parameters_preprocessor$id) %>%
+		res <- dplyr::full_join(res, pp_df, by = parameters_preprocessor$id) |>
 			dplyr::arrange(.iter_preprocessor)
 	} else {
 		res$.iter_preprocessor <- 1L
@@ -361,8 +361,8 @@ compute_grid_info <- function(workflow, grid) {
 	# preprocessing candidate set, make an iterator for the model candidate sets
 	# (if any)
 
-	res <- res %>%
-		dplyr::group_nest(.iter_preprocessor, keep = TRUE) %>%
+	res <- res |>
+		dplyr::group_nest(.iter_preprocessor, keep = TRUE) |>
 		dplyr::mutate(
 			.iter_config = purrr::map(data, make_iter_config),
 			.model = purrr::map(
@@ -370,10 +370,10 @@ compute_grid_info <- function(workflow, grid) {
 				~tibble::tibble(.iter_model = seq_len(nrow(.x)))
 			),
 			.num_models = purrr::map_int(.model, nrow)
-		) %>%
-		dplyr::select(-.iter_preprocessor) %>%
-		tidyr::unnest(cols = c(data, .model, .iter_config)) %>%
-		dplyr::select(-.lab_pre) %>%
+		) |>
+		dplyr::select(-.iter_preprocessor) |>
+		tidyr::unnest(cols = c(data, .model, .iter_config)) |>
+		dplyr::select(-.lab_pre) |>
 		dplyr::relocate(dplyr::starts_with(".iter"))
 
 	res$.msg_model <- new_msgs_model(
@@ -382,8 +382,8 @@ compute_grid_info <- function(workflow, grid) {
 		res$.msg_preprocessor
 	)
 
-	res %>%
-		dplyr::select(-.num_models) %>%
+	res |>
+		dplyr::select(-.num_models) |>
 		dplyr::relocate(dplyr::starts_with(".msg"))
 }
 

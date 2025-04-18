@@ -9,7 +9,7 @@ test_that("maker static object", {
 
 	res <- melodie:::make_static(
 		wflow,
-		param_info = wflow %>% extract_parameter_set_dials(),
+		param_info = wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(accuracy),
 		eval_time = NULL,
 		split_args = mc_cv_args,
@@ -26,7 +26,7 @@ test_that("maker static object", {
 	expect_snapshot(
 	  melodie:::make_static(
 	    1,
-	    param_info = wflow %>% extract_parameter_set_dials(),
+	    param_info = wflow |> extract_parameter_set_dials(),
 	    metrics = metric_set(accuracy),
 	    eval_time = NULL,
 	    split_args = mc_cv_args,
@@ -50,7 +50,7 @@ test_that("maker static object", {
 	expect_snapshot(
 	  melodie:::make_static(
 	    wflow,
-	    param_info = wflow %>% extract_parameter_set_dials(),
+	    param_info = wflow |> extract_parameter_set_dials(),
 	    metrics = 3,
 	    eval_time = NULL,
 	    split_args = mc_cv_args,
@@ -62,7 +62,7 @@ test_that("maker static object", {
 	expect_snapshot(
 	  melodie:::make_static(
 	    wflow,
-	    param_info = wflow %>% extract_parameter_set_dials(),
+	    param_info = wflow |> extract_parameter_set_dials(),
 	    metrics = metric_set(accuracy),
 	    eval_time = "four",
 	    split_args = mc_cv_args,

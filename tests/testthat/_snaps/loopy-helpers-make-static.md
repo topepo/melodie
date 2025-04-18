@@ -1,7 +1,7 @@
 # maker static object
 
     Code
-      melodie:::make_static(1, param_info = wflow %>% extract_parameter_set_dials(),
+      melodie:::make_static(1, param_info = extract_parameter_set_dials(wflow),
       metrics = metric_set(accuracy), eval_time = NULL, split_args = mc_cv_args,
       control = control_resamples())
     Condition
@@ -20,7 +20,7 @@
 ---
 
     Code
-      melodie:::make_static(wflow, param_info = wflow %>% extract_parameter_set_dials(),
+      melodie:::make_static(wflow, param_info = extract_parameter_set_dials(wflow),
       metrics = 3, eval_time = NULL, split_args = mc_cv_args, control = control_resamples())
     Condition
       Error in `melodie:::make_static()`:
@@ -29,7 +29,7 @@
 ---
 
     Code
-      melodie:::make_static(wflow, param_info = wflow %>% extract_parameter_set_dials(),
+      melodie:::make_static(wflow, param_info = extract_parameter_set_dials(wflow),
       metrics = metric_set(accuracy), eval_time = "four", split_args = mc_cv_args,
       control = control_resamples())
     Condition

@@ -1,7 +1,7 @@
 test_that("stage helpers - recipe only", {
 	wflow_1 <- workflows::workflow(puromycin_tune_rec, linear_reg())
-	grid_1 <- wflow_1 %>%
-		extract_parameter_set_dials() %>%
+	grid_1 <- wflow_1 |>
+		extract_parameter_set_dials() |>
 		grid_regular()
 	sched_1 <- schedule_grid(grid_1, wflow_1)
 
@@ -19,15 +19,15 @@ test_that("stage helpers - model only", {
 	# Tunable model with submodels
 
 	wflow_1 <- workflows::workflow(class ~ ., glmn_spec)
-	grid_1 <- wflow_1 %>%
-		extract_parameter_set_dials() %>%
-		grid_regular() %>%
+	grid_1 <- wflow_1 |>
+		extract_parameter_set_dials() |>
+		grid_regular() |>
 		slice(-1)
 	sched_1 <- schedule_grid(grid_1, wflow_1)
 
 	expect_equal(dim(melodie:::remove_stage(sched_1)), c(1L, 0L))
 
-	res_1 <- melodie:::remove_stage(sched_1 %>% mutate(col = 1))
+	res_1 <- melodie:::remove_stage(sched_1 |> mutate(col = 1))
 	exp_1 <- tibble::tibble(col = 1)
 	class(exp_1) <- c("grid_schedule", "schedule", class(exp_1))
 	expect_equal(res_1, exp_1)
@@ -53,14 +53,14 @@ test_that("stage helpers - model only", {
 	# Tunable model without submodels
 
 	wflow_2 <- workflows::workflow(class ~ ., dt_spec)
-	grid_2 <- wflow_2 %>%
-		extract_parameter_set_dials() %>%
+	grid_2 <- wflow_2 |>
+		extract_parameter_set_dials() |>
 		grid_regular()
 	sched_2 <- schedule_grid(grid_2, wflow_2)
 
 	expect_equal(dim(melodie:::remove_stage(sched_2)), c(1L, 0L))
 
-	res_2 <- melodie:::remove_stage(sched_2 %>% mutate(col = 1))
+	res_2 <- melodie:::remove_stage(sched_2 |> mutate(col = 1))
 	exp_2 <- tibble::tibble(col = 1)
 	class(exp_2) <- c("grid_schedule", "schedule", class(exp_2))
 	expect_equal(res_2, exp_2)
@@ -85,8 +85,8 @@ test_that("stage helpers - model only", {
 
 test_that("stage helpers - post only", {
 	wflow_1 <- workflows::workflow(class ~ ., logistic_reg(), cls_post)
-	grid_1 <- wflow_1 %>%
-		extract_parameter_set_dials() %>%
+	grid_1 <- wflow_1 |>
+		extract_parameter_set_dials() |>
 		grid_regular()
 	sched_1 <- schedule_grid(grid_1, wflow_1)
 
@@ -104,9 +104,9 @@ test_that("stage helpers - recipe and model", {
 	# No submodels
 
 	wflow_1 <- workflows::workflow(puromycin_tune_rec, dt_spec)
-	grid_1 <- wflow_1 %>%
-		extract_parameter_set_dials() %>%
-		grid_regular() %>%
+	grid_1 <- wflow_1 |>
+		extract_parameter_set_dials() |>
+		grid_regular() |>
 		slice(-1)
 	sched_1 <- schedule_grid(grid_1, wflow_1)
 
@@ -134,9 +134,9 @@ test_that("stage helpers - recipe and model", {
 	# With submodels
 
 	wflow_2 <- workflows::workflow(puromycin_tune_rec, glmn_spec)
-	grid_2 <- wflow_2 %>%
-		extract_parameter_set_dials() %>%
-		grid_regular() %>%
+	grid_2 <- wflow_2 |>
+		extract_parameter_set_dials() |>
+		grid_regular() |>
 		slice(-1)
 	sched_2 <- schedule_grid(grid_2, wflow_2)
 
@@ -164,8 +164,8 @@ test_that("stage helpers - recipe and model", {
 
 test_that("stage helpers - recipe and post", {
 	wflow_1 <- workflows::workflow(puromycin_tune_rec, logistic_reg(), cls_post)
-	grid_1 <- wflow_1 %>%
-		extract_parameter_set_dials() %>%
+	grid_1 <- wflow_1 |>
+		extract_parameter_set_dials() |>
 		grid_regular()
 	sched_1 <- schedule_grid(grid_1, wflow_1)
 

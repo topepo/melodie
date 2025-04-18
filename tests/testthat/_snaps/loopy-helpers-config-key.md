@@ -74,8 +74,8 @@
 ---
 
     Code
-      melodie:::get_config_key(tidyr::crossing(min_n = 1:3, cut = (1:5) / 5) %>%
-        slice(-1), wflow_2)
+      melodie:::get_config_key(slice(tidyr::crossing(min_n = 1:3, cut = (1:5) / 5),
+      -1), wflow_2)
     Output
       # A tibble: 14 x 3
          min_n   cut .config        
