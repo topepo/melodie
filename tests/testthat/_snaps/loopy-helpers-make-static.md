@@ -6,7 +6,7 @@
       control = control_resamples())
     Condition
       Error in `melodie:::make_static()`:
-      ! `workflow` should be a <workflow> object
+      ! `workflow` should be a <workflow> object.
 
 ---
 
@@ -15,7 +15,7 @@
       eval_time = NULL, split_args = mc_cv_args, control = control_resamples())
     Condition
       Error in `melodie:::make_static()`:
-      ! `param_info` should be a <parameters> object
+      ! `param_info` should be a <parameters> object.
 
 ---
 
@@ -24,7 +24,7 @@
       metrics = 3, eval_time = NULL, split_args = mc_cv_args, control = control_resamples())
     Condition
       Error in `melodie:::make_static()`:
-      ! `metrics` should be a <metric_set> object
+      ! `metrics` should be a <metric_set> object.
 
 ---
 
@@ -42,7 +42,7 @@
       melodie:::update_static(res, bad_part)
     Condition
       Error in `check_static_data()`:
-      ! Element `data` should be a tibble in the `fit` slot
+      ! Element `data` should be a tibble in the fit slot.
 
 ---
 
@@ -50,5 +50,5 @@
       melodie:::update_static(res, bad_part)
     Condition
       Error in `check_static_data()`:
-      ! Element `ind` should be an integer in the `fit` slot.
+      ! Element `ind` should be an integer in the fit slot.
 
