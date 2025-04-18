@@ -58,7 +58,7 @@ test_that("set configurations - two elements", {
 
 	expect_snapshot(
 		melodie:::get_config_key(
-			tidyr::crossing(min_n = 1:3, cut = (1:5) / 5) %>% slice(-1),
+			tidyr::crossing(min_n = 1:3, cut = (1:5) / 5) |> slice(-1),
 			wflow_2
 		)
 	)
@@ -66,7 +66,7 @@ test_that("set configurations - two elements", {
 	grid <- grid <- dials:::grid_space_filling(
 		parameters(degree_int(), threshold()),
 		size = 10
-	) %>%
+	) |>
 		setNames(c("degree", "cut"))
 	expect_snapshot(
 		melodie:::get_config_key(
@@ -91,7 +91,7 @@ test_that("set configurations - all or none", {
 
 	grid <- grid <- dials:::grid_space_filling(
 		parameters(degree_int(), min_n(), threshold())
-	) %>%
+	) |>
 		setNames(c("degree", "min_n", "cut"))
 
 	expect_snapshot(

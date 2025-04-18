@@ -11,7 +11,7 @@ test_that("pre_update_fit() with formulas", {
 
 	form_stc <- melodie:::make_static(
 		form_wflow,
-		param_info = form_wflow %>% extract_parameter_set_dials(),
+		param_info = form_wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(brier_class, spec),
 		eval_time = NULL,
 		split_args = rsample::.get_split_args(two_class_rs),
@@ -25,7 +25,7 @@ test_that("pre_update_fit() with formulas", {
 
 	form_res <- melodie:::pre_update_fit(form_wflow, dt_grid, form_stc)
 	expect_s3_class(form_res, "workflow")
-	form_pre_res <- form_res %>% extract_mold()
+	form_pre_res <- form_res |> extract_mold()
 	expect_named(form_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
 })
 
@@ -40,14 +40,14 @@ test_that("pre_update_fit() with recipes", {
 
 	# ----------------------------------------------------------------------------
 
-	rec <- recipe(Class ~ ., data = two_class_dat) %>%
+	rec <- recipe(Class ~ ., data = two_class_dat) |>
 		step_normalize(A, B)
 
 	rec_wflow <- workflow(rec, dt_spec)
 
 	rec_stc <- melodie:::make_static(
 		rec_wflow,
-		param_info = rec_wflow %>% extract_parameter_set_dials(),
+		param_info = rec_wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(brier_class, spec),
 		eval_time = NULL,
 		split_args = rsample::.get_split_args(two_class_rs),
@@ -60,9 +60,9 @@ test_that("pre_update_fit() with recipes", {
 
 	rec_res <- melodie:::pre_update_fit(rec_wflow, dt_grid, rec_stc)
 	expect_s3_class(rec_res, "workflow")
-	rec_pre_res <- rec_res %>% extract_mold()
+	rec_pre_res <- rec_res |> extract_mold()
 	expect_named(rec_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
-	rec_pre_res <- rec_res %>% extract_recipe()
+	rec_pre_res <- rec_res |> extract_recipe()
 	expect_s3_class(rec_pre_res, "recipe")
 })
 
@@ -75,7 +75,7 @@ test_that("pre_update_fit() with tuned recipes", {
 
 	# ----------------------------------------------------------------------------
 
-	rec <- recipe(Class ~ ., data = two_class_dat) %>%
+	rec <- recipe(Class ~ ., data = two_class_dat) |>
 		step_pca(A, B, num_comp = tune("comps"))
 
 	rec_grid <- tibble(comps = 1)
@@ -84,7 +84,7 @@ test_that("pre_update_fit() with tuned recipes", {
 
 	rec_stc <- melodie:::make_static(
 		rec_wflow,
-		param_info = rec_wflow %>% extract_parameter_set_dials(),
+		param_info = rec_wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(brier_class, spec),
 		eval_time = NULL,
 		split_args = rsample::.get_split_args(two_class_rs),
@@ -97,9 +97,9 @@ test_that("pre_update_fit() with tuned recipes", {
 
 	rec_res <- melodie:::pre_update_fit(rec_wflow, rec_grid, rec_stc)
 	expect_s3_class(rec_res, "workflow")
-	rec_pre_res <- rec_res %>% extract_mold()
+	rec_pre_res <- rec_res |> extract_mold()
 	expect_named(rec_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
-	rec_pre_res <- rec_res %>% extract_recipe()
+	rec_pre_res <- rec_res |> extract_recipe()
 	expect_s3_class(rec_pre_res, "recipe")
 	rec_pre_data <- bake(rec_pre_res, new_data = two_class_dat[1:2, ])
 	expect_named(rec_pre_data, c("Class", "PC1"))
@@ -116,12 +116,12 @@ test_that("pre_update_fit() with selectors", {
 
 	# ----------------------------------------------------------------------------
 
-	vars_wflow <- workflow(spec = dt_spec) %>%
+	vars_wflow <- workflow(spec = dt_spec) |>
 		add_variables(outcomes = c(Class), predictors = c(A, B))
 
 	vars_stc <- melodie:::make_static(
 		vars_wflow,
-		param_info = vars_wflow %>% extract_parameter_set_dials(),
+		param_info = vars_wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(brier_class, spec),
 		eval_time = NULL,
 		split_args = rsample::.get_split_args(two_class_rs),
@@ -134,7 +134,7 @@ test_that("pre_update_fit() with selectors", {
 
 	vars_res <- melodie:::pre_update_fit(vars_wflow, dt_grid, vars_stc)
 	expect_s3_class(vars_res, "workflow")
-	vars_pre_res <- vars_res %>% extract_mold()
+	vars_pre_res <- vars_res |> extract_mold()
 	expect_named(vars_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
 })
 
@@ -152,7 +152,7 @@ test_that("model_update_fit() for classification", {
 
 	dt_stc <- melodie:::make_static(
 		dt_wflow,
-		param_info = dt_wflow %>% extract_parameter_set_dials(),
+		param_info = dt_wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(brier_class, spec),
 		eval_time = NULL,
 		split_args = rsample::.get_split_args(two_class_rs),
@@ -166,6 +166,6 @@ test_that("model_update_fit() for classification", {
 	dt_0_res <- melodie:::pre_update_fit(dt_wflow, dt_grid, dt_stc)
 	dt_res <- melodie:::model_update_fit(dt_0_res, dt_grid)
 	expect_s3_class(dt_res, "workflow")
-	dt_res <- dt_res %>% extract_fit_parsnip()
+	dt_res <- dt_res |> extract_fit_parsnip()
 	expect_s3_class(dt_res, c("_C5.0", "model_fit"))
 })

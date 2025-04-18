@@ -30,7 +30,7 @@ test_that("determinig types of predictions required", {
     c("class", "prob")
   )
 
-  just_cal <- tailor() %>% adjust_probability_calibration()
+  just_cal <- tailor() |> adjust_probability_calibration()
   wflow_4 <- workflow(class ~ ., dt_spec, just_cal)
   expect_equal(
     melodie:::determine_pred_types(wflow_4, metric_set(accuracy)),
@@ -41,7 +41,7 @@ test_that("determinig types of predictions required", {
     c("class", "prob")
   )
 
-  just_thresh <- tailor() %>% adjust_probability_threshold()
+  just_thresh <- tailor() |> adjust_probability_threshold()
   wflow_5 <- workflow(class ~ ., dt_spec, just_thresh)
   expect_equal(
     melodie:::determine_pred_types(wflow_5, metric_set(accuracy)),

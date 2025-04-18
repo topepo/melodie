@@ -6,9 +6,9 @@ test_that("post with estimation, no tuning or submodels, classification", {
 
 	wflow <- workflow(class ~ ., dt_spec, cls_cal)
 
-	wflow_fit <- wflow %>%
-		finalize_workflow(dt_grid[1, ]) %>%
-		.fit_pre(data = analysis(cls$split)) %>%
+	wflow_fit <- wflow |>
+		finalize_workflow(dt_grid[1, ]) |>
+		.fit_pre(data = analysis(cls$split)) |>
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -16,7 +16,7 @@ test_that("post with estimation, no tuning or submodels, classification", {
 
 	static_1 <- melodie:::make_static(
 		wflow,
-		param_info = wflow %>% extract_parameter_set_dials(),
+		param_info = wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(accuracy, brier_class),
 		eval_time = NULL,
 		split_args = cls$args,
@@ -29,14 +29,14 @@ test_that("post with estimation, no tuning or submodels, classification", {
 
 	sched <- melodie:::schedule_grid(dt_grid, static_1$wflow)
 
-	uncal_fit <- workflow(class ~ ., dt_spec) %>%
-		finalize_workflow(dt_grid[1, ]) %>%
+	uncal_fit <- workflow(class ~ ., dt_spec) |>
+		finalize_workflow(dt_grid[1, ]) |>
 		fit(data_1$data_fit)
 
-	uncal_pred <- uncal_fit %>%
+	uncal_pred <- uncal_fit |>
 		predict(new_data = data_1$data_perf)
 
-	uncal_prob <- uncal_fit %>%
+	uncal_prob <- uncal_fit |>
 		predict(new_data = data_1$data_perf, type = "prob")
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
@@ -45,7 +45,7 @@ test_that("post with estimation, no tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- cls_sim_plist %>% mutate(min_n = double(0))
+	plist_1 <- cls_sim_plist |> mutate(min_n = double(0))
 	expect_equal(res_1[0, ], plist_1)
 
 	expect_equal(nrow(res_1), nrow(assessment(cls$split)))
@@ -70,7 +70,7 @@ test_that("post with estimation, no tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_2
 	)
-	plist_2 <- cls_sim_plist %>% mutate(min_n = double(0))
+	plist_2 <- cls_sim_plist |> mutate(min_n = double(0))
 	expect_equal(res_2[0, ], plist_2)
 	expect_equal(nrow(res_2), nrow(assessment(cls$split)))
 	expect_equal(res_2$.row, as.integer(cls$split, data = "assessment"))
@@ -95,7 +95,7 @@ test_that("post with estimation, no tuning or submodels, classification", {
 		grid = dt_grid[1, ],
 		static = static_3
 	)
-	plist_3 <- cls_sim_plist %>% mutate(min_n = double(0))
+	plist_3 <- cls_sim_plist |> mutate(min_n = double(0))
 
 	expect_equal(res_3[0, ], plist_3)
 	expect_equal(nrow(res_3), nrow(assessment(cls$split)))
@@ -113,16 +113,16 @@ test_that("post with estimation, no tuning or submodels, regression", {
 
 	wflow <- workflow(outcome ~ ., svm_spec, reg_cal)
 
-	wflow_fit <- wflow %>%
-		finalize_workflow(svm_grid[1, ]) %>%
-		.fit_pre(data = analysis(reg$split)) %>%
+	wflow_fit <- wflow |>
+		finalize_workflow(svm_grid[1, ]) |>
+		.fit_pre(data = analysis(reg$split)) |>
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
 
 	static_1 <- melodie:::make_static(
 		wflow,
-		param_info = wflow %>% extract_parameter_set_dials(),
+		param_info = wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(rmse),
 		eval_time = NULL,
 		split_args = reg$args,
@@ -135,9 +135,9 @@ test_that("post with estimation, no tuning or submodels, regression", {
 
 	sched <- melodie:::schedule_grid(svm_grid, static_1$wflow)
 
-	uncal_pred <- workflow(outcome ~ ., svm_spec) %>%
-		finalize_workflow(svm_grid[1, ]) %>%
-		fit(data_1$data_fit) %>%
+	uncal_pred <- workflow(outcome ~ ., svm_spec) |>
+		finalize_workflow(svm_grid[1, ]) |>
+		fit(data_1$data_fit) |>
 		predict(new_data = data_1$data_perf)
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
@@ -146,7 +146,7 @@ test_that("post with estimation, no tuning or submodels, regression", {
 		grid = svm_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- reg_sim_plist %>% mutate(degree = integer(0))
+	plist_1 <- reg_sim_plist |> mutate(degree = integer(0))
 
 	expect_equal(res_1[0, ], plist_1)
 	expect_equal(nrow(res_1), nrow(assessment(reg$split)))
@@ -164,9 +164,9 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 
 	wflow <- workflow(class ~ ., knn_cls_spec, cls_cal)
 
-	wflow_fit <- wflow %>%
-	  finalize_workflow(knn_grid[1, ]) %>%
-	  .fit_pre(data = analysis(cls$split)) %>%
+	wflow_fit <- wflow |>
+	  finalize_workflow(knn_grid[1, ]) |>
+	  .fit_pre(data = analysis(cls$split)) |>
 	  .fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 
 	static_1 <- melodie:::make_static(
 	  wflow,
-	  param_info = wflow %>% extract_parameter_set_dials(),
+	  param_info = wflow |> extract_parameter_set_dials(),
 	  metrics = metric_set(accuracy, brier_class),
 	  eval_time = NULL,
 	  split_args = cls$args,
@@ -187,14 +187,14 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
-	uncal_fit <- workflow(class ~ ., dt_spec) %>%
-	  finalize_workflow(dt_grid[1, ]) %>%
+	uncal_fit <- workflow(class ~ ., dt_spec) |>
+	  finalize_workflow(dt_grid[1, ]) |>
 	  fit(data_1$data_fit)
 
-	uncal_pred <- uncal_fit %>%
+	uncal_pred <- uncal_fit |>
 	  predict(new_data = data_1$data_perf)
 
-	uncal_prob <- uncal_fit %>%
+	uncal_prob <- uncal_fit |>
 	  predict(new_data = data_1$data_perf, type = "prob")
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
@@ -203,7 +203,7 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 	  grid = knn_grid[1, ],
 	  static = static_1
 	)
-	plist_1 <- cls_sim_plist %>% mutate(neighbors = double(0))
+	plist_1 <- cls_sim_plist |> mutate(neighbors = double(0))
 
 	expect_equal(res_1[0, ], plist_1)
 	expect_equal(nrow(res_1), nrow(assessment(cls$split)) * nrow(knn_grid))
@@ -230,7 +230,7 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 	  grid = knn_grid[1, ],
 	  static = static_2
 	)
-	plist_2 <- cls_sim_plist %>% mutate(neighbors = double(0))
+	plist_2 <- cls_sim_plist |> mutate(neighbors = double(0))
 
 	expect_equal(res_2[0, ], plist_2)
 	expect_equal(nrow(res_2), nrow(assessment(cls$split)) * nrow(knn_grid))
@@ -259,7 +259,7 @@ test_that("post with estimation, no tuning, with submodels, classification", {
 	  grid = knn_grid[1, ],
 	  static = static_3
 	)
-	plist_3 <- cls_sim_plist %>% mutate(neighbors = double(0))
+	plist_3 <- cls_sim_plist |> mutate(neighbors = double(0))
 
 	expect_equal(res_3[0, ], plist_3)
 	expect_equal(nrow(res_3), nrow(assessment(cls$split)) * nrow(knn_grid))
@@ -279,16 +279,16 @@ test_that("post with estimation, no tuning, with submodels, regression", {
 
 	wflow <- workflow(outcome ~ ., knn_reg_spec, reg_cal)
 
-	wflow_fit <- wflow %>%
-		finalize_workflow(knn_grid[1, ]) %>%
-		.fit_pre(data = analysis(reg$split)) %>%
+	wflow_fit <- wflow |>
+		finalize_workflow(knn_grid[1, ]) |>
+		.fit_pre(data = analysis(reg$split)) |>
 		.fit_model(control = control_workflow())
 
 	# ------------------------------------------------------------------------------
 
 	static_1 <- melodie:::make_static(
 		wflow,
-		param_info = wflow %>% extract_parameter_set_dials(),
+		param_info = wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(rmse),
 		eval_time = NULL,
 		split_args = reg$args,
@@ -301,9 +301,9 @@ test_that("post with estimation, no tuning, with submodels, regression", {
 
 	sched <- melodie:::schedule_grid(knn_grid, static_1$wflow)
 
-	uncal_pred <- workflow(outcome ~ ., knn_reg_spec) %>%
-		finalize_workflow(knn_grid[1, ]) %>%
-		fit(data_1$data_fit) %>%
+	uncal_pred <- workflow(outcome ~ ., knn_reg_spec) |>
+		finalize_workflow(knn_grid[1, ]) |>
+		fit(data_1$data_fit) |>
 		predict(new_data = data_1$data_perf)
 
 	res_1 <- melodie:::post_estimation_but_no_tuning(
@@ -312,7 +312,7 @@ test_that("post with estimation, no tuning, with submodels, regression", {
 		grid = knn_grid[1, ],
 		static = static_1
 	)
-	plist_1 <- reg_sim_plist %>% mutate(neighbors = double(0))
+	plist_1 <- reg_sim_plist |> mutate(neighbors = double(0))
 
 	expect_equal(res_1[0, ], plist_1)
 	expect_equal(nrow(res_1), nrow(assessment(reg$split)) * nrow(knn_grid))

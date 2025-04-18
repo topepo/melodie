@@ -106,8 +106,8 @@ sched_predict_wrapper <- function(
 	has_submodel <- has_sub_param(sched$predict_stage[[1]])
 	if (has_submodel) {
 		sub_param <- get_sub_param(sched$predict_stage[[1]])
-		sub_list <- sched$predict_stage[[1]] %>%
-			dplyr::select(dplyr::all_of(sub_param)) %>%
+		sub_list <- sched$predict_stage[[1]] |>
+			dplyr::select(dplyr::all_of(sub_param)) |>
 			as.list()
 	} else {
 		sub_list <- NULL
@@ -123,13 +123,13 @@ sched_predict_wrapper <- function(
 	}
 
 	processed_data_pred <- forge_from_workflow(.data, wflow_current)
-	processed_data_pred$outcomes <- processed_data_pred$outcomes %>%
+	processed_data_pred$outcomes <- processed_data_pred$outcomes |>
 		dplyr::mutate(.row = .ind)
 
 	pred <- NULL
 	for (type_iter in static$pred_types) {
 		tmp_res <- predict_wrapper(
-			model = wflow_current %>% hardhat::extract_fit_parsnip(),
+			model = wflow_current |> hardhat::extract_fit_parsnip(),
 			new_data = processed_data_pred$predictors,
 			type = type_iter,
 			eval_time = static$eval_time,
@@ -147,7 +147,7 @@ sched_predict_wrapper <- function(
 		}
 	}
 
-	pred <- pred %>%
+	pred <- pred |>
 		dplyr::full_join(processed_data_pred$outcomes, by = ".row")
 
 	pred
@@ -241,8 +241,8 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
 
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-	post_obj <- wflow_current %>%
-		hardhat::extract_postprocessor() %>%
+	post_obj <- wflow_current |>
+		hardhat::extract_postprocessor() |>
 		fit(
 			.data = cal_predictions,
 			outcome = !!outputs$outcome[[1]],
@@ -260,9 +260,9 @@ post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
 	post_obj <- hardhat::extract_postprocessor(wflow_current)
 	post_id <- setdiff(static$param_info$id, names(grid))
 
-	post_candidates <- sched$predict_stage[[1]] %>%
-		tidyr::unnest(cols = c(post_stage)) %>%
-		dplyr::select(dplyr::all_of(post_id)) %>%
+	post_candidates <- sched$predict_stage[[1]] |>
+		tidyr::unnest(cols = c(post_stage)) |>
+		dplyr::select(dplyr::all_of(post_id)) |>
 		dplyr::distinct()
 
 	post_predictions <- NULL
@@ -277,7 +277,7 @@ post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
 			sched,
 			grid,
 			static
-		) %>%
+		) |>
 			vctrs::vec_cbind(current_post_param)
 		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
 	}
@@ -291,8 +291,8 @@ post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
 
 	outputs <- get_output_columns(wflow_current, syms = TRUE)
 
-	post_obj <- wflow_current %>%
-		hardhat::extract_postprocessor() %>%
+	post_obj <- wflow_current |>
+		hardhat::extract_postprocessor() |>
 		fit(
 			# The data are not used for estimation, so save time with plist
 			.data = raw_predictions[0, ],
@@ -311,9 +311,9 @@ post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
 	post_obj <- hardhat::extract_postprocessor(wflow_current)
 	post_id <- setdiff(static$param_info$id, names(grid))
 
-	post_candidates <- sched$predict_stage[[1]] %>%
-		tidyr::unnest(cols = c(post_stage)) %>%
-		dplyr::select(dplyr::all_of(post_id)) %>%
+	post_candidates <- sched$predict_stage[[1]] |>
+		tidyr::unnest(cols = c(post_stage)) |>
+		dplyr::select(dplyr::all_of(post_id)) |>
 		dplyr::distinct()
 
 	post_predictions <- NULL
@@ -323,7 +323,7 @@ post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
 		# Finalize current tailor with parameters and stuff back in the workflow
 		tmp_post <- finalize_tailor(post_obj, current_post_param)
 		tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-		tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) %>%
+		tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) |>
 			vctrs::vec_cbind(current_post_param)
 		post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
 	}
@@ -371,7 +371,7 @@ model_update_fit <- function(wflow_current, grid) {
 # Misc functions
 
 rebind_grid <- function(...) {
-	list(...) %>% purrr::map(remove_stage) %>% purrr::list_cbind()
+	list(...) |> purrr::map(remove_stage) |> purrr::list_cbind()
 }
 
 get_output_columns <- function(x, syms = FALSE) {
@@ -468,48 +468,48 @@ get_config_key <- function(grid, wflow) {
 
 	pre_param <- info$id[info$source == "recipe"]
 	if (length(pre_param) > 0) {
-		key <- make_config_labs(grid, pre_param) %>%
+		key <- make_config_labs(grid, pre_param) |>
 			dplyr::full_join(key, by = pre_param)
 	} else {
-		key <- key %>%
+		key <- key |>
 			dplyr::mutate(pre = "pre0")
 	}
 
 	mod_param <- info$id[info$source == "model_spec"]
 	if (length(mod_param) > 0) {
-		key <- make_config_labs(grid, mod_param, "mod") %>%
+		key <- make_config_labs(grid, mod_param, "mod") |>
 			dplyr::full_join(key, by = mod_param)
 	} else {
-		key <- key %>%
+		key <- key |>
 			dplyr::mutate(mod = "mod0")
 	}
 
 	post_param <- info$id[info$source == "tailor"]
 	if (length(post_param) > 0) {
-		key <- make_config_labs(grid, post_param, "post") %>%
+		key <- make_config_labs(grid, post_param, "post") |>
 			dplyr::full_join(key, by = post_param)
 	} else {
-		key <- key %>%
+		key <- key |>
 			dplyr::mutate(post = "post0")
 	}
 
 	key$.config <- paste(key$pre, key$mod, key$post, sep = "_")
 	key$.config <- gsub("_$", "", key$.config)
-	key %>%
-		dplyr::arrange(.config) %>%
+	key |>
+		dplyr::arrange(.config) |>
 		dplyr::select(dplyr::all_of(info$id), .config)
 }
 
 make_config_labs <- function(grid, param, val = "pre") {
-	res <- grid %>%
-		dplyr::select(dplyr::all_of(param)) %>%
-		dplyr::distinct() %>%
-		dplyr::arrange(!!!rlang::syms(param)) %>%
+	res <- grid |>
+		dplyr::select(dplyr::all_of(param)) |>
+		dplyr::distinct() |>
+		dplyr::arrange(!!!rlang::syms(param)) |>
 		dplyr::mutate(
 			num = format(dplyr::row_number()),
 			num = gsub(" ", "0", num),
 			{{ val }} := paste0(val, num)
-		) %>%
+		) |>
 		dplyr::select(-num)
 
 	res
@@ -552,16 +552,16 @@ determine_pred_types <- function(wflow, metrics) {
 }
 
 reorder_pred_cols <- function(x, y_name) {
-  # x %>%
-  #   dplyr::relocate(dplyr::any_of(".row"), .before = dplyr::everything()) %>%
-  #   dplyr::relocate(dplyr::any_of(".eval_time"), .before = dplyr::everything()) %>%
-  #   dplyr::relocate(dplyr::matches(".pred_[A-Za-z]"), .before = dplyr::everything()) %>%
-  #   dplyr::relocate(dplyr::matches("^\\.pred_class$"), .before = dplyr::everything()) %>%
-  #   dplyr::relocate(dplyr::matches("^\\.pred_time$"), .before = dplyr::everything()) %>%
-  #   dplyr::relocate(dplyr::matches("^\\.pred$"), .before = dplyr::everything()) %>%
+  # x |>
+  #   dplyr::relocate(dplyr::any_of(".row"), .before = dplyr::everything()) |>
+  #   dplyr::relocate(dplyr::any_of(".eval_time"), .before = dplyr::everything()) |>
+  #   dplyr::relocate(dplyr::matches(".pred_[A-Za-z]"), .before = dplyr::everything()) |>
+  #   dplyr::relocate(dplyr::matches("^\\.pred_class$"), .before = dplyr::everything()) |>
+  #   dplyr::relocate(dplyr::matches("^\\.pred_time$"), .before = dplyr::everything()) |>
+  #   dplyr::relocate(dplyr::matches("^\\.pred$"), .before = dplyr::everything()) |>
   #   dplyr::relocate(dplyr::all_of(y_name), .before = dplyr::everything())
 
-  x %>%
+  x |>
     dplyr::relocate(
       dplyr::all_of(y_name),
       dplyr::matches("^\\.pred_time$"),

@@ -9,7 +9,7 @@ test_that("maker static object", {
 
 	res <- melodie:::make_static(
 		wflow,
-		param_info = wflow %>% extract_parameter_set_dials(),
+		param_info = wflow |> extract_parameter_set_dials(),
 		metrics = metric_set(accuracy),
 		eval_time = NULL,
 		split_args = mc_cv_args,
