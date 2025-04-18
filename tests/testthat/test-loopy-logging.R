@@ -22,7 +22,7 @@ test_that("preprocessor error doesn't stop grid", {
   )
 
   expect_identical(
-    dplyr::select(res_fit, -.notes), 
+    dplyr::select(res_fit, -.notes),
     exp,
     ignore_attr = TRUE
   )
@@ -60,7 +60,7 @@ test_that("model error doesn't stop grid", {
   )
 
   expect_identical(
-    dplyr::select(res_fit, -.notes), 
+    dplyr::select(res_fit, -.notes),
     exp,
     ignore_attr = TRUE
   )
@@ -92,7 +92,7 @@ test_that("prediction error doesn't stop grid", {
   mod_spec <- parsnip::nearest_neighbor("regression", "kknn", dist_power = tune())
 
   wf_spec <- workflow(rec_spec, mod_spec)
-  
+
   res_fit <- melodie_grid(
     wf_spec,
     folds,
@@ -101,7 +101,7 @@ test_that("prediction error doesn't stop grid", {
   )
 
   expect_identical(
-    dplyr::select(res_fit, -.notes), 
+    dplyr::select(res_fit, -.notes),
     exp,
     ignore_attr = TRUE
   )
@@ -154,7 +154,7 @@ test_that("capturing error correctly in notes", {
 test_that("capturing warning correctly in notes", {
   assign("prep.step_logging_helper", prep.step_logging_helper, envir = .GlobalEnv)
   assign("bake.step_logging_helper", bake.step_logging_helper, envir = .GlobalEnv)
-  
+
   ames <- modeldata::ames[, c(72, 40:45)]
 
   set.seed(1234)
@@ -194,7 +194,7 @@ test_that("capturing warning correctly in notes", {
 test_that("doesn't capturing message in notes", {
   assign("prep.step_logging_helper", prep.step_logging_helper, envir = .GlobalEnv)
   assign("bake.step_logging_helper", bake.step_logging_helper, envir = .GlobalEnv)
-  
+
   ames <- modeldata::ames[, c(72, 40:45)]
 
   set.seed(1234)
@@ -211,7 +211,7 @@ test_that("doesn't capturing message in notes", {
   wf_spec <- workflow(rec_spec, mod_spec)
 
   expect_snapshot(
-    res_fit <- tune_grid(
+    res_fit <- melodie_grid(
       wf_spec,
       folds,
       grid = 2,
@@ -220,8 +220,8 @@ test_that("doesn't capturing message in notes", {
   )
 
   exp <- tibble::tibble(
-    location = character(0), 
-    type = character(0), 
+    location = character(0),
+    type = character(0),
     note = character(0)
   )
 
