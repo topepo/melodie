@@ -19,16 +19,73 @@ test_that("maker static object", {
 	expect_true(is.list(res))
 	expect_named(
 		res,
-		c(
-			"wflow",
-			"param_info",
-			"post_estimation",
-			"metrics",
-			"metric_info",
-			"pred_types",
-			"eval_time",
-			"split_args",
-			"control"
-		)
+		c("wflow", "param_info", "post_estimation", "metrics", "metric_info",
+		  "pred_types", "eval_time", "split_args", "control", "data")
 	)
+
+	expect_snapshot(
+	  melodie:::make_static(
+	    1,
+	    param_info = wflow %>% extract_parameter_set_dials(),
+	    metrics = metric_set(accuracy),
+	    eval_time = NULL,
+	    split_args = mc_cv_args,
+	    control = control_resamples()
+	  ),
+	  error = TRUE
+	)
+
+	expect_snapshot(
+	  melodie:::make_static(
+	    wflow,
+	    param_info = 2,
+	    metrics = metric_set(accuracy),
+	    eval_time = NULL,
+	    split_args = mc_cv_args,
+	    control = control_resamples()
+	  ),
+	  error = TRUE
+	)
+
+	expect_snapshot(
+	  melodie:::make_static(
+	    wflow,
+	    param_info = wflow %>% extract_parameter_set_dials(),
+	    metrics = 3,
+	    eval_time = NULL,
+	    split_args = mc_cv_args,
+	    control = control_resamples()
+	  ),
+	  error = TRUE
+	)
+
+	expect_snapshot(
+	  melodie:::make_static(
+	    wflow,
+	    param_info = wflow %>% extract_parameter_set_dials(),
+	    metrics = metric_set(accuracy),
+	    eval_time = "four",
+	    split_args = mc_cv_args,
+	    control = control_resamples()
+	  ),
+	  error = TRUE
+	)
+
+	partitions <- melodie:::get_data_subsets(wflow, two_class_rs$splits[[1]])
+
+	res_with_data <- melodie:::update_static(res, partitions)
+	expect_true(is.list(res_with_data))
+	expect_named(
+	  res_with_data,
+	  c("wflow", "param_info", "post_estimation", "metrics", "metric_info",
+	    "pred_types", "eval_time", "split_args", "control", "data")
+	)
+
+	bad_part <- partitions
+	bad_part$cal$data <- 1
+	expect_snapshot(melodie:::update_static(res, bad_part), error = TRUE)
+
+	bad_part <- partitions
+	bad_part$cal$ind <- "two"
+	expect_snapshot(melodie:::update_static(res, bad_part), error = TRUE)
 })
