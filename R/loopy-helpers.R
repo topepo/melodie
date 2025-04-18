@@ -16,13 +16,13 @@ make_static <- function(
 
   # check inputs
   if (!inherits(workflow, "workflow")) {
-    cli::cli_abort("{.arg workflow} should be a {.cls workflow} object")
+    cli::cli_abort("{.arg workflow} should be a {.cls workflow} object.")
   }
   if (!inherits(param_info, "parameters")) {
-    cli::cli_abort("{.arg param_info} should be a {.cls parameters} object")
+    cli::cli_abort("{.arg param_info} should be a {.cls parameters} object.")
   }
   if (!inherits(metrics, "metric_set")) {
-    cli::cli_abort("{.arg metrics} should be a {.cls metric_set} object")
+    cli::cli_abort("{.arg metrics} should be a {.cls metric_set} object.")
   }
   if (!check_class_or_null(eval_time, "numeric")) {
     cli::cli_abort("{.arg eval_time} should be a numeric vector.")
@@ -50,17 +50,17 @@ check_static_data <- function(x, elem = "fit") {
   nms <- sort(names(x))
   if (!identical(nms, c("data", "ind"))) {
     cli::cli_abort("{.arg data_*} arguments should have names {.val data} and
-                   {.val ind}, not {.val {nms}} in the {.arg {elem}} slot.")
+                   {.val ind}, not {.val {nms}} in the {.field {elem}} slot.")
   }
 
   if (!is.integer(x[["ind"]])) {
     cli::cli_abort("Element {.arg ind} should be an integer in the
-                   {.arg {elem}} slot.")
+                   {.field {elem}} slot.")
   }
 
   if (!tibble::is_tibble(x[["data"]])) {
-    cli::cli_abort("Element {.arg data} should be a tibble in the {.arg {elem}}
-                   slot")
+    cli::cli_abort("Element {.arg data} should be a tibble in the {.field {elem}}
+                   slot.")
   }
 
   x
