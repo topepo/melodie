@@ -8,7 +8,7 @@ loopy <- function(resamples, grid, static) {
 	# Initialize some objects
 
 	split <- resamples$splits[[1]]
-	split_labs <- resamples %>%
+	split_labs <- resamples |>
 		dplyr::select(dplyr::starts_with("id"))
 
 	pred_reserve <- NULL
@@ -103,16 +103,16 @@ loopy <- function(resamples, grid, static) {
 	if (is.null(pred_reserve)) {
 		all_metrics <- NULL
 	} else {
-		all_metrics <- pred_reserve %>%
-			dplyr::group_by(!!!rlang::syms(static$param_info$id)) %>%
+		all_metrics <- pred_reserve |>
+			dplyr::group_by(!!!rlang::syms(static$param_info$id)) |>
 			tune:::.estimate_metrics(
 			  metric = static$metrics,
 			  param_names = static$param_info$id,
 			  outcome_name = static$y_name,
 			  event_level = static$control$event_level,
 			  metrics_info = tune:::metrics_info(static$metrics) # static$metric_info TODO fix
-		  ) %>%
-			dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+		  ) |>
+			dplyr::full_join(config_tbl, by = static$param_info$id) |>
 				dplyr::arrange(.config)
 	}
 
@@ -122,13 +122,13 @@ loopy <- function(resamples, grid, static) {
 	return_list <- tibble::tibble(
 		.metrics = list(all_metrics),
 		.notes = list(notes)
-	) %>%
+	) |>
 		vctrs::vec_cbind(split_labs)
 
 	if (static$control$save_pred) {
 		return_list$.predictions <- list(
-			pred_reserve %>%
-				dplyr::full_join(config_tbl, by = static$param_info$id) %>%
+			pred_reserve |>
+				dplyr::full_join(config_tbl, by = static$param_info$id) |>
 				dplyr::arrange(.config)
 		)
 	}
@@ -151,10 +151,10 @@ loopy2 <- function(index, resamples, grid, static) {
 # values of the submodel.
 get_row_wise_grid <- function(wflow, grid) {
 	param_tuned <- tune_args(wflow)$id
-	submodel <- wflow %>%
-		hardhat::extract_spec_parsnip() %>%
-		tune:::get_submodel_info() %>%
-		dplyr::filter(has_submodel) %>%
+	submodel <- wflow |>
+		hardhat::extract_spec_parsnip() |>
+		tune:::get_submodel_info() |>
+		dplyr::filter(has_submodel) |>
 		purrr::pluck("id")
 
 	const_param <- setdiff(param_tuned, submodel)
@@ -163,11 +163,11 @@ get_row_wise_grid <- function(wflow, grid) {
 	if (length(submodel) == 0) {
 		inds <- 1:nrow(grid)
 	} else {
-		grid_inds <- grid %>%
-			parsnip::add_rowindex() %>%
-			dplyr::group_nest(!!!const_param) %>%
-			dplyr::mutate(inds = dplyr::row_number()) %>%
-			tidyr::unnest(c(data)) %>%
+		grid_inds <- grid |>
+			parsnip::add_rowindex() |>
+			dplyr::group_nest(!!!const_param) |>
+			dplyr::mutate(inds = dplyr::row_number()) |>
+			tidyr::unnest(c(data)) |>
 			dplyr::select(-.row)
 		grid <- grid_inds[, param_tuned]
 		inds <- grid_inds$inds

@@ -119,7 +119,7 @@ test_that("capturing error correctly in notes", {
   set.seed(1234)
   folds <- rsample::vfold_cv(ames, 2)
 
-  rec_spec <- recipe(Sale_Price ~ ., ames) %>%
+  rec_spec <- recipe(Sale_Price ~ ., ames) |>
     step_logging_helper(type = "error")
   mod_spec <- parsnip::nearest_neighbor(
     "regression",
@@ -160,7 +160,7 @@ test_that("capturing warning correctly in notes", {
   set.seed(1234)
   folds <- rsample::vfold_cv(ames, 2)
 
-  rec_spec <- recipe(Sale_Price ~ ., ames) %>%
+  rec_spec <- recipe(Sale_Price ~ ., ames) |>
     step_logging_helper(type = "warning")
   mod_spec <- parsnip::nearest_neighbor(
     "regression",
@@ -200,7 +200,7 @@ test_that("doesn't capturing message in notes", {
   set.seed(1234)
   folds <- rsample::vfold_cv(ames, 2)
 
-  rec_spec <- recipe(Sale_Price ~ ., ames) %>%
+  rec_spec <- recipe(Sale_Price ~ ., ames) |>
     step_logging_helper(type = "message")
   mod_spec <- parsnip::nearest_neighbor(
     "regression",
