@@ -1,5 +1,4 @@
 test_that("determinig types of predictions required", {
-
   wflow_1 <- workflow(class ~ ., glmn_spec, reg_post)
   expect_equal(
     melodie:::determine_pred_types(wflow_1, metric_set(rmse)),
@@ -51,5 +50,4 @@ test_that("determinig types of predictions required", {
     melodie:::determine_pred_types(wflow_5, metric_set(brier_class)),
     c("class", "prob")
   )
-
 })

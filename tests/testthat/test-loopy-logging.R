@@ -48,7 +48,11 @@ test_that("model error doesn't stop grid", {
   )
 
   rec_spec <- recipe(Sale_Price ~ ., ames)
-  mod_spec <- parsnip::nearest_neighbor("regression", "kknn", dist_power = tune())
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    dist_power = tune()
+  )
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
@@ -89,7 +93,11 @@ test_that("prediction error doesn't stop grid", {
   )
 
   rec_spec <- recipe(Sale_Price ~ ., ames)
-  mod_spec <- parsnip::nearest_neighbor("regression", "kknn", dist_power = tune())
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    dist_power = tune()
+  )
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
@@ -112,8 +120,16 @@ test_that("prediction error doesn't stop grid", {
 })
 
 test_that("capturing error correctly in notes", {
-  assign("prep.step_logging_helper", prep.step_logging_helper, envir = .GlobalEnv)
-  assign("bake.step_logging_helper", bake.step_logging_helper, envir = .GlobalEnv)
+  assign(
+    "prep.step_logging_helper",
+    prep.step_logging_helper,
+    envir = .GlobalEnv
+  )
+  assign(
+    "bake.step_logging_helper",
+    bake.step_logging_helper,
+    envir = .GlobalEnv
+  )
   ames <- modeldata::ames[, c(72, 40:45)]
 
   set.seed(1234)
@@ -152,8 +168,16 @@ test_that("capturing error correctly in notes", {
 })
 
 test_that("capturing warning correctly in notes", {
-  assign("prep.step_logging_helper", prep.step_logging_helper, envir = .GlobalEnv)
-  assign("bake.step_logging_helper", bake.step_logging_helper, envir = .GlobalEnv)
+  assign(
+    "prep.step_logging_helper",
+    prep.step_logging_helper,
+    envir = .GlobalEnv
+  )
+  assign(
+    "bake.step_logging_helper",
+    bake.step_logging_helper,
+    envir = .GlobalEnv
+  )
 
   ames <- modeldata::ames[, c(72, 40:45)]
 
@@ -192,8 +216,16 @@ test_that("capturing warning correctly in notes", {
 })
 
 test_that("doesn't capturing message in notes", {
-  assign("prep.step_logging_helper", prep.step_logging_helper, envir = .GlobalEnv)
-  assign("bake.step_logging_helper", bake.step_logging_helper, envir = .GlobalEnv)
+  assign(
+    "prep.step_logging_helper",
+    prep.step_logging_helper,
+    envir = .GlobalEnv
+  )
+  assign(
+    "bake.step_logging_helper",
+    bake.step_logging_helper,
+    envir = .GlobalEnv
+  )
 
   ames <- modeldata::ames[, c(72, 40:45)]
 

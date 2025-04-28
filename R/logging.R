@@ -10,7 +10,7 @@ catcher <- function(expr) {
     rlang::cnd_muffle(cnd)
   }
   res <- try(
-    withCallingHandlers(warning = add_cond, expr), 
+    withCallingHandlers(warning = add_cond, expr),
     silent = TRUE
   )
   attr(res, "notes") <- signals
@@ -26,7 +26,6 @@ has_log_notes <- function(x) {
 }
 
 append_log_notes <- function(notes, x, location) {
-
   if (is_failure(x)) {
     type <- "error"
     x <- attr(x, 'condition')
@@ -42,7 +41,7 @@ append_log_notes <- function(notes, x, location) {
     note <- note[[1]]$message
   }
   tibble::add_row(
-    notes, 
+    notes,
     location = unclass(location),
     type = type,
     note = note
