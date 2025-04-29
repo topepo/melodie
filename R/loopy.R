@@ -70,35 +70,84 @@ loopy <- function(resamples, grid, static) {
         current_wflow <- remove_log_notes(current_wflow)
       }
 
-      num_pred_iter <- nrow(current_model$predict_stage[[1]])
       current_grid <- rebind_grid(current_pre, current_model)
 
-      # ------------------------------------------------------------------------
-      # Iterate over predictions and postprocessors
+      has_submodel <- has_sub_param(current_model$predict_stage[[1]])
+      num_prd_iter <- nrow(current_model$predict_stage[[1]])
 
-      pred <- .catch_and_log(
-        predictions(
-          wflow_current = current_wflow,
-          sched = current_model,
-          static = static,
-          grid = current_grid
-        )
-      )
-      if (has_log_notes(pred)) {
-        location <- glue::glue("prediction {mod}/{num_mod_iter}")
-        notes <- append_log_notes(notes, pred, location)
-        if (is_failure(pred)) {
-          next
+      # --------------------------------------------------------------------------
+      # Iterate over prediction submodels
+
+      for (prd in seq_len(num_prd_iter)) {
+
+        cli::cli_inform("Predicting {prd} of {num_prd_iter}")
+
+        current_prd <- current_model$predict_stage[[1]][prd, ]
+
+        if (has_submodel) {
+          sub_nm <- get_sub_param(current_prd)
+          sub_grid <- current_prd[, sub_nm]
+
+          # The assigned submodel parameter (from min_grid()) is in the
+          # current grid. Remove that and add the one that we are predicting on
+
+          current_grid <- current_grid |>
+            dplyr::select(-dplyr::all_of(sub_nm)) |>
+            rebind_grid(current_prd)
+
+          # predict_all_types() uses predict_wrapper() which is designed to
+          # predict all submodels at once; we get a list column back called
+          # .pred with a single row. Collapse that and remove the submodel
+          # column since it is in the currrent grid.
+          current_pred <- predict_all_types(current_wflow, static, sub_grid) |>
+            tidyr::unnest(cols = c(.pred)) |>
+            dplyr::select(-dplyr::all_of(sub_nm))
+
+        } else {
+          current_pred <- predict_all_types(current_wflow, static)
         }
-        pred <- remove_log_notes(pred)
-      }
-      # ------------------------------------------------------------------------
-      # Allocate predictions to an overall object
 
-      pred_iter <- pred_iter + 1
-      pred_reserve <- update_reserve(pred_reserve, pred_iter, pred, nrow(grid))
+        has_post <- has_sub_param(current_prd$post_stage[[1]])
+        num_pst_iter <- nrow(current_prd$post_stage[[1]])
+
+        # ----------------------------------------------------------------------
+        # Iterate over postprocessors
+
+        for (pst in seq_len(num_pst_iter)) {
+          cli::cli_inform("-- Postprocessing {pst} of {num_pst_iter}")
+
+          if (has_post) {
+            current_pst <- current_prd$post_stage[[1]][pst, ]
+
+            current_grid <- rebind_grid(current_grid, current_pst)
+
+            # maybe train postprocessor
+            # maybe predict postprocessor
+
+          }
+
+          # --------------------------------------------------------------------
+          # Allocate predictions to an overall object
+
+          current_pred <- dplyr::bind_cols(current_pred, current_grid)
+
+          pred_iter <- pred_iter + 1
+          pred_reserve <- update_reserve(pred_reserve, pred_iter, current_pred, nrow(grid))
+
+          cli::cli_inform("-- -- Allocation {pred_iter} of {nrow(grid)}")
+
+          # --------------------------------------------------------------------
+          # Placeholder for extraction
+
+
+        } # post loop
+      } # predict loop
     } # model loop
   } # pre loop
+
+  # ----------------------------------------------------------------------------
+  # Compute metrics on each config and eval_time
+
 
   if (is.null(pred_reserve)) {
     all_metrics <- NULL

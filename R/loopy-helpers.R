@@ -125,6 +125,11 @@ has_mod_param <- function(x) {
   any(names(x) != "predict_stage")
 }
 
+has_post_param <- function(x) {
+  nrow(x[[1]]) > 0
+}
+
+
 # ------------------------------------------------------------------------------
 
 # This is run on a `predict_stage` column:
@@ -412,6 +417,55 @@ post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
     post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
   }
   reorder_pred_cols(post_predictions, static$y_name)
+}
+
+# ------------------------------------------------------------------------------
+
+predict_all_types <- function(
+    wflow_fit,
+    static,
+    submodel_grid = NULL,
+    estimation = FALSE # TODO do we need this?
+) {
+  outputs <- get_output_columns(wflow_fit, syms = TRUE)
+
+  if (estimation & static$post_estimation) {
+    .data <- static$data$cal$data
+    .ind <- static$data$cal$ind
+  } else {
+    .data <- static$data$pred$data
+    .ind <- static$data$pred$ind
+  }
+
+  processed_data_pred <- forge_from_workflow(.data, wflow_fit)
+  processed_data_pred$outcomes <- processed_data_pred$outcomes |>
+    dplyr::mutate(.row = .ind)
+
+  pred <- NULL
+  for (type_iter in static$pred_types) {
+    tmp_res <- predict_wrapper(
+      model = wflow_fit |> hardhat::extract_fit_parsnip(),
+      new_data = processed_data_pred$predictors,
+      type = type_iter,
+      eval_time = static$eval_time,
+      subgrid = submodel_grid
+    )
+    tmp_res$.row <- .ind
+    # if (has_submodel) {
+    #   tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
+    # }
+
+    if (is.null(pred)) {
+      pred <- tmp_res
+    } else {
+      pred <- dplyr::full_join(pred, tmp_res, by = c(sub_param, ".row"))
+    }
+  }
+
+  pred <- pred |>
+    dplyr::full_join(processed_data_pred$outcomes, by = ".row")
+
+  pred
 }
 
 # ------------------------------------------------------------------------------
