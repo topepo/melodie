@@ -55,12 +55,18 @@ loopy <- function(resamples, grid, static) {
     # --------------------------------------------------------------------------
     # Iterate over model parameters
 
+    # Make a copy of the current workflow so that we can finalize it multiple
+    # times
+    pre_wflow <- current_wflow
+
     for (mod in seq_len(num_mod_iter)) {
       current_model <- current_pre$model_stage[[1]][mod, ]
 
+      # Splice in any parameters marked for tuning and fit the model
       current_wflow <- .catch_and_log(
-        model_update_fit(current_wflow, current_model)
+        model_update_fit(pre_wflow, current_model)
       )
+
       if (has_log_notes(current_wflow)) {
         location <- glue::glue("model {mod}/{num_mod_iter}")
         notes <- append_log_notes(notes, current_wflow, location)
