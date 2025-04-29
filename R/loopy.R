@@ -95,50 +95,71 @@ loopy <- function(resamples, grid, static) {
             dplyr::select(-dplyr::all_of(sub_nm)) |>
             rebind_grid(current_prd)
 
-          # predict_all_types() uses predict_wrapper() which is designed to
-          # predict all submodels at once; we get a list column back called
-          # .pred with a single row. Collapse that and remove the submodel
-          # column since it is in the currrent grid.
+          # Remove the submodel column since it is in the currrent grid.
           current_pred <- predict_all_types(current_wflow, static, sub_grid) |>
-            tidyr::unnest(cols = c(.pred)) |>
             dplyr::select(-dplyr::all_of(sub_nm))
 
         } else {
           current_pred <- predict_all_types(current_wflow, static)
         }
 
-        has_post <- has_sub_param(current_prd$post_stage[[1]])
+        has_post <- has_tailor(current_wflow)
         num_pst_iter <- nrow(current_prd$post_stage[[1]])
 
         # ----------------------------------------------------------------------
         # Iterate over postprocessors
+
+        current_predict_grid <- current_grid
 
         for (pst in seq_len(num_pst_iter)) {
           cli::cli_inform("-- Postprocessing {pst} of {num_pst_iter}")
 
           if (has_post) {
             current_pst <- current_prd$post_stage[[1]][pst, ]
+            post_grid <- current_pst
 
-            current_grid <- rebind_grid(current_grid, current_pst)
+            current_post_grid <- rebind_grid(current_predict_grid, current_pst)
 
-            # maybe train postprocessor
-            # maybe predict postprocessor
+            # make data for prediction (TODO maybe make a function)
+            if (has_tailor_estimated(current_wflow)) {
+              tailor_train_data <- predict_all_types(
+                current_wflow,
+                static,
+                predictee = "calibration"
+              )
+            } else {
+              tailor_train_data <- current_pred[0,]
+            }
 
+            post_fit <- train_post(
+              current_wflow,
+              predictions = tailor_train_data,
+              grid = post_grid
+            )
+
+            post_pred <- predict(post_fit, current_pred)
+
+            current_wflow <- set_workflow_tailor(current_wflow, post_fit)
+            final_pred <- dplyr::bind_cols(post_pred, current_post_grid)
+
+          } else {
+            # No postprocessor so just use what we have
+            final_pred <- dplyr::bind_cols(current_pred, current_predict_grid)
           }
 
           # --------------------------------------------------------------------
           # Allocate predictions to an overall object
 
-          current_pred <- dplyr::bind_cols(current_pred, current_grid)
-
           pred_iter <- pred_iter + 1
-          pred_reserve <- update_reserve(pred_reserve, pred_iter, current_pred, nrow(grid))
-
           cli::cli_inform("-- -- Allocation {pred_iter} of {nrow(grid)}")
+          # TODO We might not be able to predict ahead of time how many rows should
+          # be in the reserve
+          # pred_reserve <- update_reserve(pred_reserve, pred_iter, final_pred, nrow(grid))
+
+          pred_reserve <- dplyr::bind_rows(pred_reserve, final_pred)
 
           # --------------------------------------------------------------------
           # Placeholder for extraction
-
 
         } # post loop
       } # predict loop
@@ -147,7 +168,6 @@ loopy <- function(resamples, grid, static) {
 
   # ----------------------------------------------------------------------------
   # Compute metrics on each config and eval_time
-
 
   if (is.null(pred_reserve)) {
     all_metrics <- NULL

@@ -343,6 +343,27 @@ post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
   reorder_pred_cols(res, static$y_name)
 }
 
+train_post <- function(wflow_current, predictions, grid = NULL) {
+  if (is.null(grid)) {
+    grid <- tibble()
+  }
+
+  post_obj <- hardhat::extract_postprocessor(wflow_current) |>
+    tune::finalize_tailor(grid)
+
+  outputs <- get_output_columns(wflow_current, syms = TRUE)
+
+  post_obj <- post_obj |>
+    fit(
+      .data = predictions,
+      outcome = !!outputs$outcome[[1]],
+      estimate = !!outputs$estimate[[1]],
+      probabilities = c(!!!outputs$probabilities)
+    )
+
+  post_obj
+}
+
 # Get the raw predictions for the calibration and assessment sets, looping over
 # tuning parameters to train tailors, then apply them to the assessment data
 post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
@@ -425,11 +446,12 @@ predict_all_types <- function(
     wflow_fit,
     static,
     submodel_grid = NULL,
-    estimation = FALSE # TODO do we need this?
+    predictee = "assessment"
 ) {
+  predictee <- rlang::arg_match(predictee, c("assessment", "calibration"))
   outputs <- get_output_columns(wflow_fit, syms = TRUE)
 
-  if (estimation & static$post_estimation) {
+  if (predictee == "calibration" & static$post_estimation) {
     .data <- static$data$cal$data
     .ind <- static$data$cal$ind
   } else {
@@ -441,6 +463,7 @@ predict_all_types <- function(
   processed_data_pred$outcomes <- processed_data_pred$outcomes |>
     dplyr::mutate(.row = .ind)
 
+  sub_param <- names(submodel_grid)
   pred <- NULL
   for (type_iter in static$pred_types) {
     tmp_res <- predict_wrapper(
@@ -451,9 +474,13 @@ predict_all_types <- function(
       subgrid = submodel_grid
     )
     tmp_res$.row <- .ind
-    # if (has_submodel) {
-    #   tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
-    # }
+
+    # predict_wrapper() is designed to predict all submodels at once; we get a
+    # list column back called .pred with a single row. Collapse that and remove
+    # the submodel column since it is in the current grid.
+    if (length(sub_param) > 0) {
+      tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
+    }
 
     if (is.null(pred)) {
       pred <- tmp_res
