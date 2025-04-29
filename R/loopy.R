@@ -54,11 +54,10 @@ loopy <- function(resamples, grid, static) {
 
     # --------------------------------------------------------------------------
     # Iterate over model parameters
-browser()
+
     for (mod in seq_len(num_mod_iter)) {
       current_model <- current_pre$model_stage[[1]][mod, ]
-# TODO this isn't updating the model parameters since, after the first iteration,
-# current_wflow doesn't have any tuning parameters
+
       current_wflow <- .catch_and_log(
         model_update_fit(current_wflow, current_model)
       )

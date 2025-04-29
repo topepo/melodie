@@ -279,14 +279,8 @@ model_update_fit <- function(wflow_current, grid) {
   mod_spec <- hardhat::extract_spec_parsnip(wflow_current)
 
   grid <- remove_stage(grid)
-  mod_param <- hardhat::extract_parameter_set_dials(mod_spec)
-  mod_id <- mod_param$id
-
-  if (length(mod_id) > 0) {
-    grid <- grid[, mod_id]
-    mod_spec <- finalize_model(mod_spec, grid)
-    wflow_current <- set_workflow_spec(wflow_current, mod_spec)
-  }
+  mod_spec <- finalize_model(mod_spec, grid)
+  wflow_current <- set_workflow_spec(wflow_current, mod_spec)
 
   # .catch_and_log_fit()
   .fit_model(wflow_current, workflows::control_workflow())
