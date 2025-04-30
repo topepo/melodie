@@ -81,8 +81,15 @@ make_post_data <- function(mode = "classification") {
   } else if (mode == "regression") {
     dat <- modeldata::sim_regression(1000)
     nm <- "outcome"
+  } else if (mode == "censored") {
+    require(survival)
+    dat <- modeldata::deliveries |> dplyr::select(time_to_delivery, starts_with("item"))
+    evt <- rep_len(c(rep(1, 9), 0), nrow(dat))
+    dat$outcome <- survival::Surv(dat$time_to_delivery, evt)
+    dat$time_to_delivery <- NULL
+    nm <- "outcome"
   } else {
-    cli::abort("Only have modes for classification and regression so far")
+    cli::abort("Only have modes for classification, regression, and censored regression so far")
   }
   rs <- rsample::mc_cv(dat, times = 2)
   rs_split <- rs$splits[[1]]

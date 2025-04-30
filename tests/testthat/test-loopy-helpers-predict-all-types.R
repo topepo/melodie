@@ -923,3 +923,109 @@ test_that("predict regression - with submodels - with calibration", {
   expect_equal(nrow(class_res_cal), nrow(data_1$cal$data))
 })
 
+test_that("predict censored regression - no submodels - no calibration", {
+  skip_if_not_installed("modeldata")
+  skip_if_not_installed("censored")
+  skip_if_not_installed("survival")
+
+  library(censored)
+
+  cens <- make_post_data(mode = "censored")
+
+  pca_rec <- recipe(outcome ~ ., data = cens$data) |>
+    step_pca(all_numeric_predictors(), num_comp = 2)
+
+  wflow <- workflow(pca_rec, survival_reg())
+  wflow_fit <- fit(wflow, cens$data)
+
+  mtr_stc <- metric_set(concordance_survival)
+  mtr_dyn <- metric_set(brier_survival)
+  mtr_int <- metric_set(brier_survival_integrated)
+  mtr_all <- metric_set(
+    concordance_survival,
+    brier_survival,
+    brier_survival_integrated
+  )
+
+  .times <- c(15, 25)
+
+  data_1 <- melodie:::get_data_subsets(wflow, cens$rs$splits[[1]], cens$args)
+
+  surv_0 <- structure(
+    numeric(0),
+    type = "right",
+    dim = c(0L, 2L),
+    dimnames = list(NULL, c("time", "status")),
+    class = "Surv"
+  )
+
+  pred_0 <- tibble::tibble(
+    .eval_time = numeric(0),
+    .pred_survival = numeric(0)
+  )
+
+  ctrl <- tune::control_grid()
+
+  # ----------------------------------------------------------------------------
+  # static metics
+
+  static_stc <- melodie:::make_static(
+    wflow,
+    param_info = wflow |> extract_parameter_set_dials(),
+    metrics = mtr_stc,
+    eval_time = .times,
+    split_args = cens$args,
+    control = ctrl
+  )
+
+  static_stc <- melodie:::update_static(static_stc, data_1)
+  static_stc$y_name <- "outcome"
+
+  res_stc <- melodie:::predict_all_types(
+    wflow_fit,
+    static_stc,
+    submodel_grid = NULL,
+    predictee = "assessment"
+  )
+
+  expect_equal(
+    res_stc[0, ],
+    tibble(.pred_time = numeric(0), .row = integer(0), outcome = surv_0)
+  )
+  expect_equal(nrow(res_stc), nrow(assessment(cens$rs$splits[[1]])))
+
+  # ----------------------------------------------------------------------------
+  # dynamic metics
+
+  static_dyn <- melodie:::make_static(
+    wflow,
+    param_info = wflow |> extract_parameter_set_dials(),
+    metrics = mtr_dyn,
+    eval_time = .times,
+    split_args = cens$args,
+    control = ctrl
+  )
+
+  static_dyn <- melodie:::update_static(static_dyn, data_1)
+  static_dyn$y_name <- "outcome"
+
+  res_dyn <- melodie:::predict_all_types(
+    wflow_fit,
+    static_dyn,
+    submodel_grid = NULL,
+    predictee = "assessment"
+  )
+
+  expect_equal(
+    res_dyn[0, ],
+    tibble(.pred = list(), .row = integer(0), outcome = surv_0)
+  )
+
+  expect_equal(
+    res_dyn$.pred[[1]][0,],
+    pred_0
+  )
+  expect_equal(nrow(res_dyn), nrow(assessment(cens$rs$splits[[1]])))
+
+})
+
