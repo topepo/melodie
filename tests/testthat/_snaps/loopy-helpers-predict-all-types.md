@@ -16,3 +16,21 @@
       Error:
       ! Calibration data were requested but not reserved.
 
+# predict classification - with submodels - no calibration
+
+    Code
+      melodie:::predict_all_types(wflow_fit, static_both, submodel_grid = five_neighbors,
+        predictee = "potato")
+    Condition
+      Error in `melodie:::predict_all_types()`:
+      ! `predictee` must be one of "assessment" or "calibration", not "potato".
+
+---
+
+    Code
+      melodie:::predict_all_types(wflow_fit, static_bad, submodel_grid = five_neighbors,
+        predictee = "calibration")
+    Condition
+      Error:
+      ! Calibration data were requested but not reserved.
+
