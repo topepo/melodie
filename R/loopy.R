@@ -86,7 +86,7 @@ loopy <- function(resamples, grid, static) {
 
       for (prd in seq_len(num_prd_iter)) {
 
-        cli::cli_inform("Predicting {prd} of {num_prd_iter}")
+        # cli::cli_inform("Predicting {prd} of {num_prd_iter}")
 
         current_prd <- current_model$predict_stage[[1]][prd, ]
 
@@ -118,7 +118,7 @@ loopy <- function(resamples, grid, static) {
         current_predict_grid <- current_grid
 
         for (pst in seq_len(num_pst_iter)) {
-          cli::cli_inform("-- Postprocessing {pst} of {num_pst_iter}")
+          # cli::cli_inform("-- Postprocessing {pst} of {num_pst_iter}")
 
           if (has_post) {
             current_pst <- current_prd$post_stage[[1]][pst, ]
@@ -157,7 +157,7 @@ loopy <- function(resamples, grid, static) {
           # Allocate predictions to an overall object
 
           pred_iter <- pred_iter + 1
-          cli::cli_inform("-- -- Allocation {pred_iter} of {nrow(grid)}")
+          # cli::cli_inform("-- -- Allocation {pred_iter} of {nrow(grid)}")
           # TODO We might not be able to predict ahead of time how many rows should
           # be in the reserve
           # pred_reserve <- update_reserve(pred_reserve, pred_iter, final_pred, nrow(grid))
