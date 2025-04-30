@@ -212,6 +212,9 @@ predict_all_types <- function(
   outputs <- get_output_columns(wflow_fit, syms = TRUE)
 
   if (predictee == "calibration" & static$post_estimation) {
+    if (is.null(static$data$cal)) {
+      cli::cli_abort("Calibration data were requested but not reserved.", call = NULL)
+    }
     .data <- static$data$cal$data
     .ind <- static$data$cal$ind
   } else {
