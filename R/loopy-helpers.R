@@ -1,4 +1,7 @@
 # Helpers for loopy()
+#' @import rlang
+
+# TODO remove this when merged in to tune
 
 # ------------------------------------------------------------------------------
 
