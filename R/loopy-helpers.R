@@ -156,7 +156,7 @@ get_sub_param <- function(x) {
 has_tailor <- function(x) {
   "tailor" %in% names(x$post$actions)
 }
-#
+
 has_tailor_tuned <- function(x) {
   if (!has_tailor(x)) {
     res <- FALSE
@@ -227,6 +227,11 @@ predict_all_types <- function(
     dplyr::mutate(.row = .ind)
 
   sub_param <- names(submodel_grid)
+
+  # Convert argument names to parsnip format
+  # TODO look at this again to see if we really need these new functions
+  submodel_grid <- engine_to_parsnip(static$wflow, submodel_grid)
+
   pred <- NULL
   for (type_iter in static$pred_types) {
     tmp_res <- predict_wrapper(
@@ -244,6 +249,9 @@ predict_all_types <- function(
     if (length(sub_param) > 0) {
       tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
     }
+
+    # Now go back to engine names
+    tmp_res <- parsnip_to_engine(static$wflow, tmp_res)
 
     if (is.null(pred)) {
       pred <- tmp_res
@@ -481,4 +489,32 @@ reorder_pred_cols <- function(x, y_name) {
       dplyr::any_of(".row"),
       .before = dplyr::everything()
     )
+}
+
+engine_to_parsnip <- function(wflow, grid) {
+  grid_nm <- names(grid)
+  key <- parsnip:::.model_param_name_key(wflow) |>
+    dplyr::filter(user != parsnip & user %in% grid_nm) |>
+    dplyr::select(-engine)
+
+  if (nrow(key) == 0) {
+    return(grid)
+  }
+  nm_lst <- key$user
+  names(nm_lst) <- key$parsnip
+  dplyr::rename(grid, dplyr::all_of(nm_lst))
+}
+
+parsnip_to_engine <- function(wflow, grid) {
+  grid_nm <- names(grid)
+  key <- parsnip:::.model_param_name_key(wflow) |>
+    dplyr::filter(user != parsnip & parsnip %in% grid_nm) |>
+    dplyr::select(-engine)
+
+  if (nrow(key) == 0) {
+    return(grid)
+  }
+  nm_lst <- key$parsnip
+  names(nm_lst) <- key$user
+  dplyr::rename(grid, dplyr::all_of(nm_lst))
 }
