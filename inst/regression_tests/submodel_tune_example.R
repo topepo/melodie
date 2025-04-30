@@ -76,8 +76,8 @@ submodel_res <-
     control = control_grid(save_pred = TRUE)
   )
 
-submodel_metrics <- collect_metrics(submodel_res)
-submodel_pred <- collect_predictions(submodel_res)
+submodel_metrics <- collect_metrics(submodel_res, summarize = FALSE)
+submodel_pred <- collect_predictions(submodel_res, summarize = FALSE)
 
 # ------------------------------------------------------------------------------
 

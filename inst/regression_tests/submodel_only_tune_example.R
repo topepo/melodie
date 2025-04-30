@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 # Expected results produced by tune 1.3.0 to compare to later implementations
-# This "simple" example is for model-only results with no submodels
+# This example tunes a model over a single submodel parameter.
 
 library(tidymodels)
 library(sessioninfo)
@@ -14,38 +14,32 @@ options(pillar.advice = FALSE, pillar.min_title_chars = Inf)
 # ------------------------------------------------------------------------------
 
 set.seed(1)
-dat <- sim_regression(1000)
+dat <- sim_classification(1000)
 rs <- vfold_cv(dat)
 
 # ------------------------------------------------------------------------------
 
-mod <- nearest_neighbor(neighbors = 11, weight_func = tune()) |>
-  set_mode("regression")
+mod <- nearest_neighbor(neighbors = tune(), weight_func = "triangular") |>
+  set_mode("classification")
 
-simple_wflow <- workflow(outcome ~ ., mod)
+submodel_only_wflow <- workflow(class ~ ., mod)
 
-simple_grid <-
-  tibble::tribble(
-    ~weight_func,
-    "rectangular",
-    "triangular",
-    "epanechnikov"
-  )
+submodel_only_grid <- tibble(neighbors = 3:10)
 
-simple_res <-
-  simple_wflow |>
+submodel_only_res <-
+  submodel_only_wflow |>
   tune_grid(
     resamples = rs,
-    grid = simple_grid,
+    grid = submodel_only_grid,
     control = control_grid(save_pred = TRUE)
   )
 
-simple_metrics <- collect_metrics(simple_res)
-simple_pred <- collect_predictions(simple_res)
+submodel_only_metrics <- collect_metrics(submodel_only_res, summarize = FALSE)
+submodel_only_pred <- collect_predictions(submodel_only_res, summarize = FALSE)
 
 # ------------------------------------------------------------------------------
 
-save(simple_metrics, simple_pred, file = "simple_example.RData")
+save(submodel_only_metrics, submodel_only_pred, file = "submodel_only_example.RData")
 
 # ------------------------------------------------------------------------------
 
