@@ -296,3 +296,33 @@ test_that("captures xgboost C errors", {
     2L
   )
 })
+
+test_that("captures kknn errors", {
+  # kknn is gonna complain because one of the predictors is Inf
+  ames <- modeldata::ames[, c(72, 40:45)]
+  ames$Second_Flr_SF <- Inf
+
+  set.seed(1234)
+  folds <- rsample::vfold_cv(ames, 2)
+
+  rec_spec <- recipe(Sale_Price ~ ., ames)
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    neighbors = tune()
+  )
+
+  wf_spec <- workflow(rec_spec, mod_spec)
+
+  res_fit <- melodie_grid(
+    wf_spec,
+    folds,
+    grid = 2,
+    control = control_grid(allow_par = FALSE)
+  )
+
+  expect_identical(
+    nrow(collect_notes(res_fit)),
+    2L
+  )
+})
