@@ -46,6 +46,7 @@ Suggests:
     C50,
     censored (>= 0.3.0),
     covr,
+    glmnet,
     kernlab,
     kknn,
     knitr,
