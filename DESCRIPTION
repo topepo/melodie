@@ -67,7 +67,8 @@ Remotes:
     tidymodels/rsample,
     tidymodels/tailor,
     tidymodels/tune,
-    tidymodels/workflows
+    tidymodels/workflows,
+    KlausVigo/kknn#28
 Config/Needs/website: pkgdown, tidymodels, kknn, doParallel, doFuture,
     tidyverse/tidytemplate
 Config/testthat/edition: 3
