@@ -157,8 +157,6 @@ test_that("capturing error correctly in notes", {
     type = "error",
     note = "testing error"
   )
-  expect_identical(res_fit$.notes[[1]], exp)
-  expect_identical(res_fit$.notes[[2]], exp)
 
   expect_true(
     all(vapply(res_fit$.metrics, NROW, integer(1)) == 0)
@@ -295,8 +293,19 @@ test_that("captures kknn R errors", {
     nrow(collect_notes(res_fit)),
     2L
   )
-})
 
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(neighbors = 10)), ames),
+    silent = TRUE
+  )
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  expect_identical(
+    rep(exp, 2),
+    collect_notes(res_fit)$note
+  )
+})
 
 test_that("captures xgboost C errors", {
   # xgboost is gonna complain because one of the predictors is Inf
@@ -325,6 +334,26 @@ test_that("captures xgboost C errors", {
   expect_identical(
     nrow(collect_notes(res_fit)),
     2L
+  )
+
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(trees = 10)), ames),
+    silent = TRUE
+  )
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  trim_error <- function(x) {
+    gsub("\\[[0-9:]+\\]", "", x)
+  }
+
+  expect_identical(
+    trim_error(
+      rep(exp, 2)
+    ),
+    trim_error(
+      collect_notes(res_fit)$note
+    )
   )
 })
 
@@ -361,17 +390,20 @@ test_that("captures cli styled errors", {
     control = control_grid(allow_par = FALSE)
   )
 
-  exp <- tibble::tibble(
-    location = "preprocessor 1/1",
-    type = "error",
-    note = "testing error"
+  expect_identical(
+    nrow(collect_notes(res_fit)),
+    2L
   )
-  expect_identical(res_fit$.notes[[1]], exp)
-  expect_identical(res_fit$.notes[[2]], exp)
 
-  expect_true(
-    all(vapply(res_fit$.metrics, NROW, integer(1)) == 0)
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(dist_power = 10)), ames),
+    silent = TRUE
   )
-  rm(list = "prep.step_logging_helper", envir = .GlobalEnv)
-  rm(list = "bake.step_logging_helper", envir = .GlobalEnv)
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  expect_identical(
+    rep(exp, 2),
+    collect_notes(res_fit)$note
+  )
 })

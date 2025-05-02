@@ -29,12 +29,7 @@ append_log_notes <- function(notes, x, location) {
   if (is_failure(x)) {
     type <- "error"
     x <- attr(x, 'condition')
-
-    if (is.null(x$parent)) {
-      note <- x$message
-    } else {
-      note <- x$parent$message
-    }
+    note <- conditionMessage(x)
   } else {
     type <- "warning"
     note <- attr(x, "notes")
