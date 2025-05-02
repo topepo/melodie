@@ -267,8 +267,8 @@ test_that("doesn't capturing message in notes", {
   rm(list = "bake.step_logging_helper", envir = .GlobalEnv)
 })
 
-test_that("captures xgboost C errors", {
-  # xgboost is gonna complain because one of the predictors is Inf
+test_that("captures kknn R errors", {
+  # kknn is gonna complain because one of the predictors is Inf
   ames <- modeldata::ames[, c(72, 40:45)]
   ames$Second_Flr_SF <- Inf
 
@@ -276,10 +276,10 @@ test_that("captures xgboost C errors", {
   folds <- rsample::vfold_cv(ames, 2)
 
   rec_spec <- recipe(Sale_Price ~ ., ames)
-  mod_spec <- parsnip::boost_tree(
+  mod_spec <- parsnip::nearest_neighbor(
     "regression",
-    "xgboost",
-    trees = tune()
+    "kknn",
+    neighbors = tune()
   )
 
   wf_spec <- workflow(rec_spec, mod_spec)
@@ -297,8 +297,9 @@ test_that("captures xgboost C errors", {
   )
 })
 
-test_that("captures kknn R errors", {
-  # kknn is gonna complain because one of the predictors is Inf
+
+test_that("captures xgboost C errors", {
+  # xgboost is gonna complain because one of the predictors is Inf
   ames <- modeldata::ames[, c(72, 40:45)]
   ames$Second_Flr_SF <- Inf
 
@@ -306,10 +307,10 @@ test_that("captures kknn R errors", {
   folds <- rsample::vfold_cv(ames, 2)
 
   rec_spec <- recipe(Sale_Price ~ ., ames)
-  mod_spec <- parsnip::nearest_neighbor(
+  mod_spec <- parsnip::boost_tree(
     "regression",
-    "kknn",
-    neighbors = tune()
+    "xgboost",
+    trees = tune()
   )
 
   wf_spec <- workflow(rec_spec, mod_spec)
