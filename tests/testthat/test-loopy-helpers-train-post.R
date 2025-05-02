@@ -21,6 +21,8 @@ test_that("tailor trains calibrator", {
 
 test_that("tailor updated with grid and fit", {
   skip_if_not_installed("modeldata")
+  skip_if_not_installed("probably")
+  skip_if_not_installed("mgcv")
 
   cls <- make_post_data()
 

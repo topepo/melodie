@@ -142,6 +142,8 @@ test_that("predict classification - no submodels - no calibration", {
 
 test_that("predict classification - no submodels - with calibration", {
   skip_if_not_installed("modeldata")
+  skip_if_not_installed("probably")
+  skip_if_not_installed("mgcv")
 
   cls <- make_post_data()
 
@@ -489,6 +491,8 @@ test_that("predict classification - with submodels - no calibration", {
 test_that("predict classification - with submodels - with calibration", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
+  skip_if_not_installed("probably")
+  skip_if_not_installed("mgcv")
 
   cls <- make_post_data()
 
@@ -736,6 +740,8 @@ test_that("predict regression - no submodels - no calibration", {
 
 test_that("predict regression - no submodels - with calibration", {
   skip_if_not_installed("modeldata")
+  skip_if_not_installed("probably")
+  skip_if_not_installed("mgcv")
 
   reg <- make_post_data(mode = "regression")
 
@@ -846,6 +852,8 @@ test_that("predict regression - with submodels - no calibration", {
 test_that("predict regression - with submodels - with calibration", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
+  skip_if_not_installed("probably")
+  skip_if_not_installed("mgcv")
 
   reg <- make_post_data(mode = "regression")
 
