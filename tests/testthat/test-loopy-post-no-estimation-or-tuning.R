@@ -84,7 +84,7 @@ test_that("verifying loopy, no submodels, no post estimation or tuning", {
   expect_true(all(rmse_diff$diffs > 0))
 })
 
-test_that("verifying loopy, submodels", {
+test_that("verifying loopy, submodels, no post estimation or tuning", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
 
@@ -204,7 +204,7 @@ test_that("verifying loopy, submodels", {
 
 })
 
-test_that("verifying loopy, submodels only", {
+test_that("verifying loopy, submodels only, no post estimation or tuning", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
 

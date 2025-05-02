@@ -75,7 +75,7 @@ test_that("verifying loopy, no submodels, tuning, no estimation", {
 
 })
 
-test_that("verifying loopy, submodels", {
+test_that("verifying loopy, submodels, tuning, no estimation", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
 
@@ -183,7 +183,7 @@ test_that("verifying loopy, submodels", {
 
 })
 
-test_that("verifying loopy, submodels only", {
+test_that("verifying loopy, submodels only, tuning, no estimation", {
   skip_if_not_installed("modeldata")
   skip_if_not_installed("kknn")
 
