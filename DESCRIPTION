@@ -63,6 +63,7 @@ Remotes:
     tidymodels/dials,
     tidymodels/hardhat,
     tidymodels/parsnip,
+    tidymodels/probably,
     tidymodels/recipes,
     tidymodels/rsample,
     tidymodels/tailor,
