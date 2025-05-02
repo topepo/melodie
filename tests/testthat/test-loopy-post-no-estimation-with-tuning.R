@@ -50,45 +50,29 @@ test_that("verifying loopy, no submodels, tuning, no estimation", {
   static_1$y_name <- "outcome"
 
   simple_res <- melodie:::loopy(rs_iter, grd, static_1)
+  expect_true(!is.null(simple_res$.metrics[[1]]))
   expect_named(simple_res, c(".metrics", ".notes", "id"))
   expect_true(nrow(simple_res) == 1)
 
-  # Loop over upper limits and chech rmse
+  # Loop over upper limits and check rmse
 
   exp_rmse_mtr <-
     simple_metrics |>
     dplyr::filter(id == "Fold01" & .metric == "rmse") |>
     dplyr::select(weight_func, raw_rmse = .estimate)
 
-  obs_rsq_simple_mtr <-
+  obs_rmse_simple_mtr <-
     simple_res$.metrics[[1]] |>
     dplyr::filter(.metric == "rmse")
 
-  expect_equal(obs_rsq_simple_mtr, exp_rsq_mtr)
-
-  # rmse should be bad
-  exp_rmse_mtr <-
-    simple_metrics |>
-    dplyr::filter(id == "Fold01" & .metric == "rmse") |>
-    dplyr::select(all_of(names(simple_res$.metrics[[1]]))) |>
-    arrange(weight_func) |>
-    dplyr::select(expected = .estimate, weight_func)
+  # rmse should be worse
 
   for (cut in upper_vals) {
-
+    obs_rmse <- obs_rmse_simple_mtr |> dplyr::filter(upper_limit == cut)
+    diff_rmse <- inner_join(obs_rmse, exp_rmse_mtr, by = "weight_func")
+    expect_true(all(diff_rmse$.estimate > diff_rmse$raw_rmse))
   }
 
-  obs_rmse_simple_mtr <-
-    simple_res$.metrics[[1]] |>
-    dplyr::filter(.metric == "rmse") |>
-    arrange(weight_func)  |>
-    dplyr::select(obs = .estimate, weight_func)
-
-  rmse_diff <-
-    full_join(exp_rmse_mtr, obs_rmse_simple_mtr, by = "weight_func") |>
-    mutate(diffs = obs - expected)
-
-  expect_true(all(rmse_diff$diffs > 0))
 })
 
 test_that("verifying loopy, submodels", {
@@ -125,7 +109,12 @@ test_that("verifying loopy, submodels", {
 
   submodel_wflow <- workflow(rec, mod, reg_max)
 
-# TODO crossing with this
+  max_param <-
+    submodel_wflow |>
+    extract_parameter_set_dials() |>
+    update(upper_limit = upper_limit(c(0, 1)))
+
+  upper_vals <- 0:1
 
   # fmt: skip
   submodel_grid <-
@@ -154,14 +143,15 @@ test_that("verifying loopy, submodels", {
       9L, "epanechnikov",       10L,
       14L, "epanechnikov",       10L,
       20L, "epanechnikov",       10L
-    )
+    ) |>
+    tidyr::crossing(upper_limit = upper_vals)
 
   # ------------------------------------------------------------------------------
 
   static_1 <- melodie:::make_static(
     submodel_wflow,
-    param_info = submodel_wflow |> extract_parameter_set_dials(),
-    metrics = metric_set(rmse, rsq),
+    param_info = max_param,
+    metrics = metric_set(rmse),
     eval_time = NULL,
     split_args = rs_args,
     control = ctrl
@@ -175,7 +165,21 @@ test_that("verifying loopy, submodels", {
   expect_named(submodel_res, c(".metrics", ".notes", "id"))
   expect_true(nrow(submodel_res) == 1)
 
-  #  TODO
+  # rmse should be worse
+  exp_rmse_mtr <-
+    submodel_metrics |>
+    dplyr::filter(id == "Fold01" & .metric == "rmse") |>
+    dplyr::select(raw_rmse = .estimate, weight_func, k, num_comp)
+
+  obs_rmse_submodel_mtr <-
+    submodel_res$.metrics[[1]] |>
+    dplyr::filter(.metric == "rmse")
+
+  for (cut in upper_vals) {
+    obs_rmse <- obs_rmse_submodel_mtr |> dplyr::filter(upper_limit == cut)
+    diff_rmse <- inner_join(obs_rmse, exp_rmse_mtr, by = join_by(k, weight_func, num_comp))
+    expect_true(all(diff_rmse$.estimate > diff_rmse$raw_rmse))
+  }
 
 })
 
@@ -210,8 +214,8 @@ test_that("verifying loopy, submodels only", {
 
   submodel_only_wflow <- workflow(class ~ ., mod, cls_post)
 
-  # TODO adjust grid with cut
-  submodel_only_grid <- tibble(neighbors = 3:10)
+  cut_vals <- c(.1, .9)
+  submodel_only_grid <- tidyr::crossing(neighbors = 3:10, cut = cut_vals)
 
   # ------------------------------------------------------------------------------
 
@@ -233,6 +237,33 @@ test_that("verifying loopy, submodels only", {
   expect_true(nrow(submodel_only_res) == 1)
 
 
-  #  TODO
+  # accuracy should be worse, others should be same
+  exp_acc_mtr <-
+    submodel_only_metrics |>
+    dplyr::filter(id == "Fold01" & .metric == "accuracy") |>
+    dplyr::select(raw = .estimate, neighbors)
+
+  exp_prob_mtr <-
+    submodel_only_metrics |>
+    dplyr::filter(id == "Fold01" & .metric == "brier_class") |>
+    dplyr::select(raw = .estimate, neighbors, .metric)
+
+  obs_acc_submodel_only_mtr <-
+    submodel_only_res$.metrics[[1]] |>
+    dplyr::filter(.metric == "accuracy")
+
+  obs_prob_submodel_only_mtr <-
+    submodel_only_res$.metrics[[1]] |>
+    dplyr::filter(.metric == "brier_class")
+
+  for (thrsh in cut_vals) {
+    obs_acc <- obs_acc_submodel_only_mtr |> dplyr::filter(cut == thrsh)
+    diff_acc <- inner_join(obs_acc, exp_acc_mtr, by = join_by(neighbors))
+    expect_true(all(diff_acc$.estimate < diff_acc$raw))
+
+    obs_prob <- obs_prob_submodel_only_mtr |> dplyr::filter(cut == thrsh )
+    diff_prob <- inner_join(obs_prob, exp_prob_mtr, by = join_by(neighbors, .metric))
+    expect_true(all(diff_prob$.estimate == diff_prob$raw))
+  }
 })
 
