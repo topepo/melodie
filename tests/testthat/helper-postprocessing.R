@@ -33,7 +33,7 @@ cls_est_post <- tailor::tailor() |>
   tailor::adjust_probability_calibration(method = "logistic")
 
 cls_cal_tune_post <- tailor::tailor() |>
-  tailor::adjust_probability_calibration(method = tune()) |>
+  tailor::adjust_probability_calibration(method = "logistic") |>
   tailor::adjust_probability_threshold(threshold = tune("cut"))
 
 cls_cal <- tailor::tailor() |>
@@ -119,6 +119,10 @@ reg_cal <- tailor::tailor() |>
   tailor::adjust_numeric_calibration()
 
 reg_max <- tailor::tailor() |>
+  tailor::adjust_numeric_range(upper_limit = tune())
+
+reg_cal_max <- tailor::tailor() |>
+  tailor::adjust_numeric_calibration() |>
   tailor::adjust_numeric_range(upper_limit = tune())
 
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) |>
