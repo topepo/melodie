@@ -225,4 +225,3 @@ test_that("verifying loopy, submodels only", {
 
   expect_equal(exp_mtr, obs_submodel_only_mtr)
 })
-

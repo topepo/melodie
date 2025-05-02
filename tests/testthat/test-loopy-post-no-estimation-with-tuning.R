@@ -72,7 +72,6 @@ test_that("verifying loopy, no submodels, tuning, no estimation", {
     diff_rmse <- inner_join(obs_rmse, exp_rmse_mtr, by = "weight_func")
     expect_true(all(diff_rmse$.estimate > diff_rmse$raw_rmse))
   }
-
 })
 
 test_that("verifying loopy, submodels, tuning, no estimation", {
@@ -177,10 +176,13 @@ test_that("verifying loopy, submodels, tuning, no estimation", {
 
   for (cut in upper_vals) {
     obs_rmse <- obs_rmse_submodel_mtr |> dplyr::filter(upper_limit == cut)
-    diff_rmse <- inner_join(obs_rmse, exp_rmse_mtr, by = join_by(k, weight_func, num_comp))
+    diff_rmse <- inner_join(
+      obs_rmse,
+      exp_rmse_mtr,
+      by = join_by(k, weight_func, num_comp)
+    )
     expect_true(all(diff_rmse$.estimate > diff_rmse$raw_rmse))
   }
-
 })
 
 test_that("verifying loopy, submodels only, tuning, no estimation", {
@@ -236,7 +238,6 @@ test_that("verifying loopy, submodels only, tuning, no estimation", {
   expect_named(submodel_only_res, c(".metrics", ".notes", "id"))
   expect_true(nrow(submodel_only_res) == 1)
 
-
   # accuracy should be worse, others should be same
   exp_acc_mtr <-
     submodel_only_metrics |>
@@ -261,9 +262,12 @@ test_that("verifying loopy, submodels only, tuning, no estimation", {
     diff_acc <- inner_join(obs_acc, exp_acc_mtr, by = join_by(neighbors))
     expect_true(all(diff_acc$.estimate < diff_acc$raw))
 
-    obs_prob <- obs_prob_submodel_only_mtr |> dplyr::filter(cut == thrsh )
-    diff_prob <- inner_join(obs_prob, exp_prob_mtr, by = join_by(neighbors, .metric))
+    obs_prob <- obs_prob_submodel_only_mtr |> dplyr::filter(cut == thrsh)
+    diff_prob <- inner_join(
+      obs_prob,
+      exp_prob_mtr,
+      by = join_by(neighbors, .metric)
+    )
     expect_true(all(diff_prob$.estimate == diff_prob$raw))
   }
 })
-

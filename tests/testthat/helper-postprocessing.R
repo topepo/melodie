@@ -83,13 +83,16 @@ make_post_data <- function(mode = "classification") {
     nm <- "outcome"
   } else if (mode == "censored") {
     require(survival)
-    dat <- modeldata::deliveries |> dplyr::select(time_to_delivery, starts_with("item"))
+    dat <- modeldata::deliveries |>
+      dplyr::select(time_to_delivery, starts_with("item"))
     evt <- rep_len(c(rep(1, 9), 0), nrow(dat))
     dat$outcome <- survival::Surv(dat$time_to_delivery, evt)
     dat$time_to_delivery <- NULL
     nm <- "outcome"
   } else {
-    cli::abort("Only have modes for classification, regression, and censored regression so far")
+    cli::abort(
+      "Only have modes for classification, regression, and censored regression so far"
+    )
   }
   rs <- rsample::mc_cv(dat, times = 2)
   rs_split <- rs$splits[[1]]
@@ -138,4 +141,19 @@ puromycin_plist <- tibble::tibble(
   rate = puromycin$rate[0],
   .pred = puromycin$rate[0],
   .row = integer(0)
+)
+
+# ------------------------------------------------------------------------------
+
+surv_0 <- structure(
+  numeric(0),
+  type = "right",
+  dim = c(0L, 2L),
+  dimnames = list(NULL, c("time", "status")),
+  class = "Surv"
+)
+
+pred_0 <- tibble::tibble(
+  .eval_time = numeric(0),
+  .pred_survival = numeric(0)
 )

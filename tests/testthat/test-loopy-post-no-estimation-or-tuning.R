@@ -74,7 +74,7 @@ test_that("verifying loopy, no submodels, no post estimation or tuning", {
   obs_rmse_simple_mtr <-
     simple_res$.metrics[[1]] |>
     dplyr::filter(.metric == "rmse") |>
-    arrange(weight_func)  |>
+    arrange(weight_func) |>
     dplyr::select(obs = .estimate, weight_func)
 
   rmse_diff <-
@@ -193,15 +193,18 @@ test_that("verifying loopy, submodels, no post estimation or tuning", {
   obs_rmse_submodel_mtr <-
     submodel_res$.metrics[[1]] |>
     dplyr::filter(.metric == "rmse") |>
-    arrange(weight_func, k, num_comp)  |>
+    arrange(weight_func, k, num_comp) |>
     dplyr::select(obs = .estimate, weight_func, k, num_comp)
 
   rmse_diff <-
-    full_join(exp_rmse_mtr, obs_rmse_submodel_mtr, by = c("weight_func", "k", "num_comp")) |>
+    full_join(
+      exp_rmse_mtr,
+      obs_rmse_submodel_mtr,
+      by = c("weight_func", "k", "num_comp")
+    ) |>
     mutate(diffs = obs - expected)
 
   expect_true(all(rmse_diff$diffs > 0))
-
 })
 
 test_that("verifying loopy, submodels only, no post estimation or tuning", {
@@ -256,7 +259,6 @@ test_that("verifying loopy, submodels only, no post estimation or tuning", {
   expect_named(submodel_only_res, c(".metrics", ".notes", "id"))
   expect_true(nrow(submodel_only_res) == 1)
 
-
   # Thresholding so accuracy should be different and Brier and ROC should be
   # unchanged
   exp_prob_mtr <-
@@ -285,13 +287,16 @@ test_that("verifying loopy, submodels only, no post estimation or tuning", {
   obs_acc_submodel_only_mtr <-
     submodel_only_res$.metrics[[1]] |>
     dplyr::filter(.metric == "accuracy") |>
-    arrange(neighbors, .metric)  |>
+    arrange(neighbors, .metric) |>
     dplyr::select(obs = .estimate, neighbors, .metric)
 
   rmse_diff <-
-    full_join(exp_acc_mtr, obs_acc_submodel_only_mtr, by = c("neighbors", ".metric")) |>
+    full_join(
+      exp_acc_mtr,
+      obs_acc_submodel_only_mtr,
+      by = c("neighbors", ".metric")
+    ) |>
     mutate(diffs = obs - expected)
 
   expect_true(all(rmse_diff$diffs < 0))
 })
-

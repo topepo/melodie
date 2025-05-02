@@ -145,8 +145,6 @@ test_that("verifying loopy, submodels, post estimation without tuning", {
     nrow(submodel_res$.predictions[[1]]),
     nrow(data_1$pred$data) * nrow(submodel_grid)
   )
-
-
 })
 
 test_that("verifying loopy, submodels only, post estimation without tuning", {
@@ -209,6 +207,4 @@ test_that("verifying loopy, submodels only, post estimation without tuning", {
   )
 
   # TODO more tests can be added when calibration method = "none" is implemented
-
 })
-
