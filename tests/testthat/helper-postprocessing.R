@@ -118,6 +118,9 @@ reg_post <- tailor::tailor() |>
 reg_cal <- tailor::tailor() |>
   tailor::adjust_numeric_calibration()
 
+reg_max <- tailor::tailor() |>
+  tailor::adjust_numeric_range(upper_limit = tune())
+
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) |>
   parsnip::set_engine("glmnet")
 
