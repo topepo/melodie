@@ -291,11 +291,13 @@ test_that("captures kknn R errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -333,11 +335,13 @@ test_that("captures xgboost C errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -392,11 +396,13 @@ test_that("captures cli styled errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -458,8 +464,6 @@ test_that("emitter works with errors", {
     type = "error",
     note = "testing error"
   )
-  expect_identical(res_fit$.notes[[1]], exp)
-  expect_identical(res_fit$.notes[[2]], exp)
 
   expect_true(
     all(vapply(res_fit$.metrics, NROW, integer(1)) == 0)

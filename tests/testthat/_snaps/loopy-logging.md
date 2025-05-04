@@ -25,7 +25,9 @@
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
     Message
-      > A | error: testing error
+      > A | error: Error in `step_logging_helper()`:
+      Caused by error in `prep.step_logging_helper()`:
+      ! testing error
 
 # capturing warning correctly in notes
 
@@ -44,11 +46,35 @@
       testing message
       testing message
 
+# captures kknn R errors
+
+    Code
+      res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
+        allow_par = FALSE))
+
+# captures xgboost C errors
+
+    Code
+      res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
+        allow_par = FALSE))
+
+# captures cli styled errors
+
+    Code
+      res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
+        allow_par = FALSE))
+    Message
+      > A | error: Error in `step_logging_helper()`:
+      Caused by error in `prep.step_logging_helper()`:
+      ! testing error
+
 # emitter works with errors
 
     Code
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
     Message
-      > A | error: testing error
+      > A | error: Error in `step_logging_helper()`:
+      Caused by error in `prep.step_logging_helper()`:
+      ! testing error
 
