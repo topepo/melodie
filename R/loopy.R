@@ -44,6 +44,7 @@ loopy <- function(resamples, grid, static) {
     if (has_log_notes(current_wflow)) {
       location <- glue::glue("preprocessor {pre}/{num_pre_iter}")
       notes <- append_log_notes(notes, current_wflow, location)
+      catalog_log(notes)
       if (is_failure(current_wflow)) {
         next
       }
