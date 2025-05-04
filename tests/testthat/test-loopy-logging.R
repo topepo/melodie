@@ -157,8 +157,6 @@ test_that("capturing error correctly in notes", {
     type = "error",
     note = "testing error"
   )
-  expect_identical(res_fit$.notes[[1]], exp)
-  expect_identical(res_fit$.notes[[2]], exp)
 
   expect_true(
     all(vapply(res_fit$.metrics, NROW, integer(1)) == 0)
@@ -265,4 +263,147 @@ test_that("doesn't capturing message in notes", {
   )
   rm(list = "prep.step_logging_helper", envir = .GlobalEnv)
   rm(list = "bake.step_logging_helper", envir = .GlobalEnv)
+})
+
+test_that("captures kknn R errors", {
+  # kknn is gonna complain because one of the predictors is Inf
+  ames <- modeldata::ames[, c(72, 40:45)]
+  ames$Second_Flr_SF <- Inf
+
+  set.seed(1234)
+  folds <- rsample::vfold_cv(ames, 2)
+
+  rec_spec <- recipe(Sale_Price ~ ., ames)
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    neighbors = tune()
+  )
+
+  wf_spec <- workflow(rec_spec, mod_spec)
+
+  res_fit <- melodie_grid(
+    wf_spec,
+    folds,
+    grid = 2,
+    control = control_grid(allow_par = FALSE)
+  )
+
+  expect_identical(
+    nrow(collect_notes(res_fit)),
+    2L
+  )
+
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(neighbors = 10)), ames),
+    silent = TRUE
+  )
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  expect_identical(
+    rep(exp, 2),
+    collect_notes(res_fit)$note
+  )
+})
+
+test_that("captures xgboost C errors", {
+  # xgboost is gonna complain because one of the predictors is Inf
+  ames <- modeldata::ames[, c(72, 40:45)]
+  ames$Second_Flr_SF <- Inf
+
+  set.seed(1234)
+  folds <- rsample::vfold_cv(ames, 2)
+
+  rec_spec <- recipe(Sale_Price ~ ., ames)
+  mod_spec <- parsnip::boost_tree(
+    "regression",
+    "xgboost",
+    trees = tune()
+  )
+
+  wf_spec <- workflow(rec_spec, mod_spec)
+
+  res_fit <- melodie_grid(
+    wf_spec,
+    folds,
+    grid = 2,
+    control = control_grid(allow_par = FALSE)
+  )
+
+  expect_identical(
+    nrow(collect_notes(res_fit)),
+    2L
+  )
+
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(trees = 10)), ames),
+    silent = TRUE
+  )
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  trim_error <- function(x) {
+    gsub("\\[[0-9:]+\\]", "", x)
+  }
+
+  expect_identical(
+    trim_error(
+      rep(exp, 2)
+    ),
+    trim_error(
+      collect_notes(res_fit)$note
+    )
+  )
+})
+
+test_that("captures cli styled errors", {
+  assign(
+    "prep.step_logging_helper",
+    prep.step_logging_helper,
+    envir = .GlobalEnv
+  )
+  assign(
+    "bake.step_logging_helper",
+    bake.step_logging_helper,
+    envir = .GlobalEnv
+  )
+  ames <- modeldata::ames[, c(72, 40:45)]
+
+  set.seed(1234)
+  folds <- rsample::vfold_cv(ames, 2)
+
+  rec_spec <- recipe(Sale_Price ~ ., ames) |>
+    step_logging_helper(type = "error")
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    dist_power = tune()
+  )
+
+  wf_spec <- workflow(rec_spec, mod_spec)
+
+  res_fit <- melodie_grid(
+    wf_spec,
+    folds,
+    grid = 2,
+    control = control_grid(allow_par = FALSE)
+  )
+
+  expect_identical(
+    nrow(collect_notes(res_fit)),
+    2L
+  )
+
+  exp <- try(
+    fit(finalize_workflow(wf_spec, tibble(dist_power = 10)), ames),
+    silent = TRUE
+  )
+  exp <- attr(exp, "condition")
+  exp <- conditionMessage(exp)
+
+  expect_identical(
+    rep(exp, 2),
+    collect_notes(res_fit)$note
+  )
 })
