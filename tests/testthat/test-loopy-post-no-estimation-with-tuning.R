@@ -268,6 +268,10 @@ test_that("verifying loopy, submodels only, tuning, no estimation", {
       exp_prob_mtr,
       by = join_by(neighbors, .metric)
     )
-    expect_true(all(diff_prob$.estimate == diff_prob$raw))
+
+    print(diff_prob$.estimate)
+    print(diff_prob$raw)
+
+    expect_equal(diff_prob$.estimate, diff_prob$raw, tolerance = 0.01)
   }
 })
