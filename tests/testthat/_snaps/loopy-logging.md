@@ -6,6 +6,9 @@
         allow_par = FALSE))
     Message
       > A | error: invalid type (list) for variable 'First_Flr_SF'
+      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
+      
 
 # model error doesn't stop grid
 
@@ -28,6 +31,9 @@
       > A | error: Error in `step_logging_helper()`:
       Caused by error in `prep.step_logging_helper()`:
       ! testing error
+      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
+      
 
 # capturing warning correctly in notes
 
@@ -36,6 +42,9 @@
         allow_par = FALSE))
     Message
       > A | warning: testing warning
+      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
+      
 
 # doesn't capturing message in notes
 
@@ -67,6 +76,9 @@
       > A | error: Error in `step_logging_helper()`:
       Caused by error in `prep.step_logging_helper()`:
       ! testing error
+      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
+      
 
 # emitter works with errors
 
@@ -77,4 +89,7 @@
       > A | error: Error in `step_logging_helper()`:
       Caused by error in `prep.step_logging_helper()`:
       ! testing error
+      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
+      
 

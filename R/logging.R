@@ -57,6 +57,8 @@ melodie_env <-
     )
   )
 
+lbls <- c(LETTERS, letters, 1:1e3)
+
 catalog_log <- function(x) {
   catalog <- rlang::env_get(melodie_env, "progress_catalog")
 
@@ -86,15 +88,60 @@ catalog_log <- function(x) {
       note <- paste0("\u00a0\u00a0", note)
     }
     msg <- glue::glue(
-      "{color(cli::style_bold(LETTERS[new_id]))} | {color(x$type)}: {x$note}"
+      "{color(cli::style_bold(lbls[new_id]))} | {color(x$type)}: {x$note}"
     )
     cli::cli_alert(msg)
   }
 
   rlang::env_bind(melodie_env, progress_catalog = catalog)
+  rlang::env_bind(
+    melodie_env$progress_env,
+    catalog_summary = summarize_catalog(catalog)
+  )
+
+  rlang::with_options(
+    cli::cli_progress_bar(
+      type = "custom",
+      format = "There were issues with some computations   {catalog_summary}",
+      clear = FALSE,
+      .envir = melodie_env$progress_env
+    ),
+    cli.progress_show_after = 0
+  )
+
+  cli::cli_progress_update(.envir = melodie_env$progress_env)
 
   return(NULL)
 }
+
+# given a catalog, summarize errors and warnings in a 1-length glue vector.
+# for use by the progress bar inside of `tune_catalog()`.
+summarize_catalog <- function(catalog, sep = "   ") {
+  if (nrow(catalog) == 0) {
+    return("")
+  }
+
+  res <- dplyr::arrange(catalog, id)
+  res <- dplyr::mutate(
+    res,
+    color = dplyr::if_else(
+      type == "warning",
+      list(cli::col_yellow),
+      list(cli::col_red)
+    )
+  )
+  res <- dplyr::rowwise(res)
+  res <- dplyr::mutate(
+    res,
+    msg = glue::glue("{color(cli::style_bold(lbls[id]))}: x{n}")
+  )
+  res <- dplyr::ungroup(res)
+  res <- dplyr::pull(res, msg)
+  res <- glue::glue_collapse(res, sep = sep)
+
+  res
+}
+
 
 initialize_catalog <- function(env = rlang::caller_env()) {
   catalog <-
@@ -107,6 +154,8 @@ initialize_catalog <- function(env = rlang::caller_env()) {
       ),
       nrow = 0
     )
+
+  rlang::env_bind(melodie_env, progress_env = env)
 
   rlang::env_bind(melodie_env, progress_catalog = catalog)
   withr::defer(
