@@ -214,7 +214,7 @@ predict_all_types <- function(
   predictee <- rlang::arg_match(predictee, c("assessment", "calibration"))
   outputs <- get_output_columns(wflow_fit, syms = TRUE)
 
-  if (predictee == "calibration" & static$post_estimation) {
+  if (predictee == "calibration" && static$post_estimation) {
     if (is.null(static$data$cal)) {
       cli::cli_abort("Calibration data were requested but not reserved.", call = NULL)
     }

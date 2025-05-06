@@ -56,7 +56,8 @@ loopy <- function(resamples, grid, static) {
     # Iterate over model parameters
 
     # Make a copy of the current workflow so that we can finalize it multiple
-    # times
+    # times, since finalize_*() functions will not update parameters whose 
+    # values currently are tune()
     pre_wflow <- current_wflow
 
     for (mod in seq_len(num_mod_iter)) {
