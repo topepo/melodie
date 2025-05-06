@@ -186,7 +186,7 @@ train_post <- function(wflow_current, predictions, grid = NULL) {
   post_obj <- hardhat::extract_postprocessor(wflow_current) |>
     tune::finalize_tailor(grid)
 
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
+  outputs <- get_output_columns(wflow_current)
 
   post_obj <- post_obj |>
     fit(
@@ -208,7 +208,7 @@ predict_all_types <- function(
     predictee = "assessment"
 ) {
   predictee <- rlang::arg_match(predictee, c("assessment", "calibration"))
-  outputs <- get_output_columns(wflow_fit, syms = TRUE)
+  outputs <- get_output_columns(wflow_fit)
 
   if (predictee == "calibration" && static$post_estimation) {
     if (is.null(static$data$cal)) {
