@@ -128,10 +128,6 @@ has_mod_param <- function(x) {
   any(names(x) != "predict_stage")
 }
 
-has_post_param <- function(x) {
-  nrow(x[[1]]) > 0
-}
-
 # ------------------------------------------------------------------------------
 
 # This is run on a `predict_stage` column:
