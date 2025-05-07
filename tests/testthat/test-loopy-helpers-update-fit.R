@@ -1,4 +1,4 @@
-test_that("pre_update_fit() with formulas", {
+test_that("finalize_fit_pre() with formulas", {
   skip_if_not_installed("modeldata")
 
   data("two_class_dat", package = "modeldata")
@@ -23,7 +23,7 @@ test_that("pre_update_fit() with formulas", {
   )
   form_stc$y_name <- "Class"
 
-  form_res <- melodie:::pre_update_fit(form_wflow, dt_grid, form_stc)
+  form_res <- melodie:::finalize_fit_pre(form_wflow, dt_grid, form_stc)
   expect_s3_class(form_res, "workflow")
   form_pre_res <- form_res |> extract_mold()
   expect_named(form_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
@@ -31,7 +31,7 @@ test_that("pre_update_fit() with formulas", {
 
 # ------------------------------------------------------------------------------
 
-test_that("pre_update_fit() with recipes", {
+test_that("finalize_fit_pre() with recipes", {
   skip_if_not_installed("modeldata")
 
   data("two_class_dat", package = "modeldata")
@@ -58,7 +58,7 @@ test_that("pre_update_fit() with recipes", {
     melodie:::get_data_subsets(rec_stc$wflow, rs_split, rec_stc$split_args)
   )
 
-  rec_res <- melodie:::pre_update_fit(rec_wflow, dt_grid, rec_stc)
+  rec_res <- melodie:::finalize_fit_pre(rec_wflow, dt_grid, rec_stc)
   expect_s3_class(rec_res, "workflow")
   rec_pre_res <- rec_res |> extract_mold()
   expect_named(rec_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
@@ -66,7 +66,7 @@ test_that("pre_update_fit() with recipes", {
   expect_s3_class(rec_pre_res, "recipe")
 })
 
-test_that("pre_update_fit() with tuned recipes", {
+test_that("finalize_fit_pre() with tuned recipes", {
   skip_if_not_installed("modeldata")
 
   data("two_class_dat", package = "modeldata")
@@ -95,7 +95,7 @@ test_that("pre_update_fit() with tuned recipes", {
     melodie:::get_data_subsets(rec_stc$wflow, rs_split, rec_stc$split_args)
   )
 
-  rec_res <- melodie:::pre_update_fit(rec_wflow, rec_grid, rec_stc)
+  rec_res <- melodie:::finalize_fit_pre(rec_wflow, rec_grid, rec_stc)
   expect_s3_class(rec_res, "workflow")
   rec_pre_res <- rec_res |> extract_mold()
   expect_named(rec_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
@@ -107,7 +107,7 @@ test_that("pre_update_fit() with tuned recipes", {
 
 # ------------------------------------------------------------------------------
 
-test_that("pre_update_fit() with selectors", {
+test_that("finalize_fit_pre() with selectors", {
   skip_if_not_installed("modeldata")
 
   data("two_class_dat", package = "modeldata")
@@ -132,7 +132,7 @@ test_that("pre_update_fit() with selectors", {
     melodie:::get_data_subsets(vars_stc$wflow, rs_split, vars_stc$split_args)
   )
 
-  vars_res <- melodie:::pre_update_fit(vars_wflow, dt_grid, vars_stc)
+  vars_res <- melodie:::finalize_fit_pre(vars_wflow, dt_grid, vars_stc)
   expect_s3_class(vars_res, "workflow")
   vars_pre_res <- vars_res |> extract_mold()
   expect_named(vars_pre_res, c("predictors", "outcomes", "blueprint", "extras"))

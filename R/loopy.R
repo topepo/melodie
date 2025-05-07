@@ -39,7 +39,7 @@ loopy <- function(resamples, grid, static) {
   for (pre in seq_len(num_pre_iter)) {
     current_pre <- sched[pre, ]
     current_wflow <- .catch_and_log(
-      pre_update_fit(static$wflow, current_pre, static)
+      finalize_fit_pre(static$wflow, current_pre, static)
     )
     if (has_log_notes(current_wflow)) {
       location <- glue::glue("preprocessor {pre}/{num_pre_iter}")

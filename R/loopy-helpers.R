@@ -268,7 +268,7 @@ predict_all_types <- function(
 # ------------------------------------------------------------------------------
 # Fitting/training functions
 
-pre_update_fit <- function(wflow_current, grid, static) {
+finalize_fit_pre <- function(wflow_current, grid, static) {
   pre_proc <- hardhat::extract_preprocessor(wflow_current)
 
   if (inherits(pre_proc, "recipe")) {
