@@ -36,13 +36,13 @@ loopy <- function(resamples, grid, static) {
 
   num_iterations_pre <- nrow(sched)
 
-  for (pre in seq_len(num_iterations_pre)) {
-    current_sched_pre <- sched[pre, ]
+  for (iter_pre in seq_len(num_iterations_pre)) {
+    current_sched_pre <- sched[iter_pre, ]
     current_wflow <- .catch_and_log(
       finalize_fit_pre(static$wflow, current_sched_pre, static)
     )
     if (has_log_notes(current_wflow)) {
-      location <- glue::glue("preprocessor {pre}/{num_iterations_pre}")
+      location <- glue::glue("preprocessor {iter_pre}/{num_iterations_pre}")
       notes <- append_log_notes(notes, current_wflow, location)
       if (is_failure(current_wflow)) {
         next
@@ -60,8 +60,8 @@ loopy <- function(resamples, grid, static) {
     # values currently are tune()
     pre_wflow <- current_wflow
 
-    for (mod in seq_len(num_iterations_model)) {
-      current_sched_model <- current_sched_pre$model_stage[[1]][mod, ]
+    for (iter_model in seq_len(num_iterations_model)) {
+      current_sched_model <- current_sched_pre$model_stage[[1]][iter_model, ]
 
       # Splice in any parameters marked for tuning and fit the model
       current_wflow <- .catch_and_log(
@@ -69,7 +69,7 @@ loopy <- function(resamples, grid, static) {
       )
 
       if (has_log_notes(current_wflow)) {
-        location <- glue::glue("model {mod}/{num_iterations_model}")
+        location <- glue::glue("model {iter_model}/{num_iterations_model}")
         notes <- append_log_notes(notes, current_wflow, location)
         if (is_failure(current_wflow)) {
           next
@@ -85,10 +85,12 @@ loopy <- function(resamples, grid, static) {
       # --------------------------------------------------------------------------
       # Iterate over prediction submodels
 
-      for (prd in seq_len(num_iterations_pred)) {
-        # cli::cli_inform("Predicting {prd} of {num_iterations_pred}")
+      for (iter_pred in seq_len(num_iterations_pred)) {
+        # cli::cli_inform("Predicting {iter_pred} of {num_iterations_pred}")
 
-        current_sched_pred <- current_sched_model$predict_stage[[1]][prd, ]
+        current_sched_pred <- current_sched_model$predict_stage[[1]][
+          iter_pred,
+        ]
 
         if (has_submodel) {
           sub_nm <- get_sub_param(current_sched_pred)
@@ -116,11 +118,12 @@ loopy <- function(resamples, grid, static) {
 
         current_predict_grid <- current_grid
 
-        for (pst in seq_len(num_iterations_post)) {
-          # cli::cli_inform("-- Postprocessing {pst} of {num_iterations_post}")
+        for (iter_post in seq_len(num_iterations_post)) {
+          # cli::cli_inform("-- Postprocessing {iter_post} of {num_iterations_post}")
 
           if (has_post) {
-            current_sched_post <- current_sched_pred$post_stage[[1]][pst, ]
+            current_sched_post <-
+              current_sched_pred$post_stage[[1]][iter_post, ]
             post_grid <- current_sched_post
 
             current_post_grid <- rebind_grid(
