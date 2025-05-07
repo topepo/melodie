@@ -37,9 +37,9 @@ loopy <- function(resamples, grid, static) {
   num_pre_iter <- nrow(sched)
 
   for (pre in seq_len(num_pre_iter)) {
-    current_pre <- sched[pre, ]
+    current_sched_pre <- sched[pre, ]
     current_wflow <- .catch_and_log(
-      finalize_fit_pre(static$wflow, current_pre, static)
+      finalize_fit_pre(static$wflow, current_sched_pre, static)
     )
     if (has_log_notes(current_wflow)) {
       location <- glue::glue("preprocessor {pre}/{num_pre_iter}")
@@ -50,22 +50,22 @@ loopy <- function(resamples, grid, static) {
       current_wflow <- remove_log_notes(current_wflow)
     }
 
-    num_mod_iter <- nrow(current_pre$model_stage[[1]])
+    num_mod_iter <- nrow(current_sched_pre$model_stage[[1]])
 
     # --------------------------------------------------------------------------
     # Iterate over model parameters
 
     # Make a copy of the current workflow so that we can finalize it multiple
-    # times, since finalize_*() functions will not update parameters whose 
+    # times, since finalize_*() functions will not update parameters whose
     # values currently are tune()
     pre_wflow <- current_wflow
 
     for (mod in seq_len(num_mod_iter)) {
-      current_model <- current_pre$model_stage[[1]][mod, ]
+      current_sched_model <- current_sched_pre$model_stage[[1]][mod, ]
 
       # Splice in any parameters marked for tuning and fit the model
       current_wflow <- .catch_and_log(
-        finalize_fit_model(pre_wflow, current_model)
+        finalize_fit_model(pre_wflow, current_sched_model)
       )
 
       if (has_log_notes(current_wflow)) {
@@ -77,41 +77,39 @@ loopy <- function(resamples, grid, static) {
         current_wflow <- remove_log_notes(current_wflow)
       }
 
-      current_grid <- rebind_grid(current_pre, current_model)
+      current_grid <- rebind_grid(current_sched_pre, current_sched_model)
 
-      has_submodel <- has_sub_param(current_model$predict_stage[[1]])
-      num_prd_iter <- nrow(current_model$predict_stage[[1]])
+      has_submodel <- has_sub_param(current_sched_model$predict_stage[[1]])
+      num_prd_iter <- nrow(current_sched_model$predict_stage[[1]])
 
       # --------------------------------------------------------------------------
       # Iterate over prediction submodels
 
       for (prd in seq_len(num_prd_iter)) {
-
         # cli::cli_inform("Predicting {prd} of {num_prd_iter}")
 
-        current_prd <- current_model$predict_stage[[1]][prd, ]
+        current_sched_pred <- current_sched_model$predict_stage[[1]][prd, ]
 
         if (has_submodel) {
-          sub_nm <- get_sub_param(current_prd)
-          sub_grid <- current_prd[, sub_nm]
+          sub_nm <- get_sub_param(current_sched_pred)
+          sub_grid <- current_sched_pred[, sub_nm]
 
           # The assigned submodel parameter (from min_grid()) is in the
           # current grid. Remove that and add the one that we are predicting on
 
           current_grid <- current_grid |>
             dplyr::select(-dplyr::all_of(sub_nm)) |>
-            rebind_grid(current_prd)
+            rebind_grid(current_sched_pred)
 
           # Remove the submodel column since it is in the currrent grid.
           current_pred <- predict_all_types(current_wflow, static, sub_grid) |>
             dplyr::select(-dplyr::all_of(sub_nm))
-
         } else {
           current_pred <- predict_all_types(current_wflow, static)
         }
 
         has_post <- has_tailor(current_wflow)
-        num_pst_iter <- nrow(current_prd$post_stage[[1]])
+        num_pst_iter <- nrow(current_sched_pred$post_stage[[1]])
 
         # ----------------------------------------------------------------------
         # Iterate over postprocessors
@@ -122,10 +120,13 @@ loopy <- function(resamples, grid, static) {
           # cli::cli_inform("-- Postprocessing {pst} of {num_pst_iter}")
 
           if (has_post) {
-            current_pst <- current_prd$post_stage[[1]][pst, ]
-            post_grid <- current_pst
+            current_sched_post <- current_sched_pred$post_stage[[1]][pst, ]
+            post_grid <- current_sched_post
 
-            current_post_grid <- rebind_grid(current_predict_grid, current_pst)
+            current_post_grid <- rebind_grid(
+              current_predict_grid,
+              current_sched_post
+            )
 
             # make data for prediction (TODO maybe make a function)
             if (has_tailor_estimated(current_wflow)) {
@@ -135,7 +136,7 @@ loopy <- function(resamples, grid, static) {
                 predictee = "calibration"
               )
             } else {
-              tailor_train_data <- current_pred[0,]
+              tailor_train_data <- current_pred[0, ]
             }
 
             post_fit <- finalize_fit_post(
@@ -148,7 +149,6 @@ loopy <- function(resamples, grid, static) {
 
             current_wflow <- set_workflow_tailor(current_wflow, post_fit)
             final_pred <- dplyr::bind_cols(post_pred, current_post_grid)
-
           } else {
             # No postprocessor so just use what we have
             final_pred <- dplyr::bind_cols(current_pred, current_predict_grid)
@@ -167,7 +167,6 @@ loopy <- function(resamples, grid, static) {
 
           # --------------------------------------------------------------------
           # Placeholder for extraction
-
         } # post loop
       } # predict loop
     } # model loop
