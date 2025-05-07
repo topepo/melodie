@@ -178,7 +178,7 @@ has_tailor_estimated <- function(x) {
 # ------------------------------------------------------------------------------
 # Prediction and postprocessing
 
-train_post <- function(wflow_current, predictions, grid = NULL) {
+finalize_fit_post <- function(wflow_current, predictions, grid = NULL) {
   if (is.null(grid)) {
     grid <- tibble()
   }

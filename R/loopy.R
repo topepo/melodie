@@ -138,7 +138,7 @@ loopy <- function(resamples, grid, static) {
               tailor_train_data <- current_pred[0,]
             }
 
-            post_fit <- train_post(
+            post_fit <- finalize_fit_post(
               current_wflow,
               predictions = tailor_train_data,
               grid = post_grid

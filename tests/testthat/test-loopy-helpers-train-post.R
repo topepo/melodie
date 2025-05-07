@@ -10,7 +10,7 @@ test_that("tailor trains calibrator", {
     .fit_model(control = control_workflow())
 
   predictions <- augment(wflow_fit$fit$fit, cls$data)
-  res <- melodie:::train_post(wflow_fit, predictions, grid = tibble())
+  res <- melodie:::finalize_fit_post(wflow_fit, predictions, grid = tibble())
   expect_s3_class(res, "tailor")
   expect_true(res$adjustments[[1]]$trained)
   expect_equal(
@@ -37,7 +37,11 @@ test_that("tailor updated with grid and fit", {
     .fit_model(control = control_workflow())
 
   predictions <- augment(wflow_fit$fit$fit, cls$data)
-  res <- melodie:::train_post(wflow_fit, predictions, grid = tibble(cut = 0))
+  res <- melodie:::finalize_fit_post(
+    wflow_fit,
+    predictions,
+    grid = tibble(cut = 0)
+  )
   re_predicted <- predict(res, predictions)
 
   expect_s3_class(res, "tailor")
