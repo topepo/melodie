@@ -33,7 +33,7 @@ cls_est_post <- tailor::tailor() |>
   tailor::adjust_probability_calibration(method = "logistic")
 
 cls_cal_tune_post <- tailor::tailor() |>
-  tailor::adjust_probability_calibration(method = tune()) |>
+  tailor::adjust_probability_calibration(method = "logistic") |>
   tailor::adjust_probability_threshold(threshold = tune("cut"))
 
 cls_cal <- tailor::tailor() |>
@@ -81,8 +81,18 @@ make_post_data <- function(mode = "classification") {
   } else if (mode == "regression") {
     dat <- modeldata::sim_regression(1000)
     nm <- "outcome"
+  } else if (mode == "censored") {
+    require(survival)
+    dat <- modeldata::deliveries |>
+      dplyr::select(time_to_delivery, starts_with("item"))
+    evt <- rep_len(c(rep(1, 9), 0), nrow(dat))
+    dat$outcome <- survival::Surv(dat$time_to_delivery, evt)
+    dat$time_to_delivery <- NULL
+    nm <- "outcome"
   } else {
-    cli::abort("Only have modes for classification and regression so far")
+    cli::abort(
+      "Only have modes for classification, regression, and censored regression so far"
+    )
   }
   rs <- rsample::mc_cv(dat, times = 2)
   rs_split <- rs$splits[[1]]
@@ -111,6 +121,13 @@ reg_post <- tailor::tailor() |>
 reg_cal <- tailor::tailor() |>
   tailor::adjust_numeric_calibration()
 
+reg_max <- tailor::tailor() |>
+  tailor::adjust_numeric_range(upper_limit = tune())
+
+reg_cal_max <- tailor::tailor() |>
+  tailor::adjust_numeric_calibration() |>
+  tailor::adjust_numeric_range(upper_limit = tune())
+
 glmn_spec <- parsnip::linear_reg(penalty = tune(), mixture = tune()) |>
   parsnip::set_engine("glmnet")
 
@@ -124,4 +141,19 @@ puromycin_plist <- tibble::tibble(
   rate = puromycin$rate[0],
   .pred = puromycin$rate[0],
   .row = integer(0)
+)
+
+# ------------------------------------------------------------------------------
+
+surv_0 <- structure(
+  numeric(0),
+  type = "right",
+  dim = c(0L, 2L),
+  dimnames = list(NULL, c("time", "status")),
+  class = "Surv"
+)
+
+pred_0 <- tibble::tibble(
+  .eval_time = numeric(0),
+  .pred_survival = numeric(0)
 )
