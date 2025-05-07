@@ -285,7 +285,7 @@ finalize_fit_pre <- function(wflow_current, grid, static) {
   workflows::.fit_pre(wflow_current, static$data$fit$data)
 }
 
-model_update_fit <- function(wflow_current, grid) {
+finalize_fit_model <- function(wflow_current, grid) {
   mod_spec <- hardhat::extract_spec_parsnip(wflow_current)
 
   grid <- remove_stage(grid)

@@ -65,7 +65,7 @@ loopy <- function(resamples, grid, static) {
 
       # Splice in any parameters marked for tuning and fit the model
       current_wflow <- .catch_and_log(
-        model_update_fit(pre_wflow, current_model)
+        finalize_fit_model(pre_wflow, current_model)
       )
 
       if (has_log_notes(current_wflow)) {

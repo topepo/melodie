@@ -138,7 +138,7 @@ test_that("finalize_fit_pre() with selectors", {
   expect_named(vars_pre_res, c("predictors", "outcomes", "blueprint", "extras"))
 })
 
-test_that("model_update_fit() for classification", {
+test_that("finalize_fit_model() for classification", {
   skip_if_not_installed("modeldata")
 
   data("two_class_dat", package = "modeldata")
@@ -163,8 +163,8 @@ test_that("model_update_fit() for classification", {
     melodie:::get_data_subsets(dt_stc$wflow, rs_split, dt_stc$split_args)
   )
 
-  dt_0_res <- melodie:::pre_update_fit(dt_wflow, dt_grid, dt_stc)
-  dt_res <- melodie:::model_update_fit(dt_0_res, dt_grid)
+  dt_0_res <- melodie:::finalize_fit_pre(dt_wflow, dt_grid, dt_stc)
+  dt_res <- melodie:::finalize_fit_model(dt_0_res, dt_grid)
   expect_s3_class(dt_res, "workflow")
   dt_res <- dt_res |> extract_fit_parsnip()
   expect_s3_class(dt_res, c("_C5.0", "model_fit"))
