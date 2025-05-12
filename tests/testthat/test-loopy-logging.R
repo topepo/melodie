@@ -75,7 +75,6 @@ test_that("model error doesn't stop grid", {
 })
 
 test_that("prediction error doesn't stop grid", {
-  skip("Get Emil to take a look at this")
   # Errors in predictions as we have injected NA values into the testing splits
   ames <- modeldata::ames[, c(72, 40:45)]
 
