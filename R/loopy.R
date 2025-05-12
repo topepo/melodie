@@ -104,10 +104,23 @@ loopy <- function(resamples, grid, static) {
             rebind_grid(current_sched_pred)
 
           # Remove the submodel column since it is in the currrent grid.
-          current_pred <- predict_all_types(current_wflow, static, sub_grid) |>
-            dplyr::select(-dplyr::all_of(sub_nm))
+          current_pred <- .catch_and_log(
+            predict_all_types(current_wflow, static, sub_grid) |>
+              dplyr::select(-dplyr::all_of(sub_nm))
+          )
         } else {
-          current_pred <- predict_all_types(current_wflow, static)
+          current_pred <- .catch_and_log(
+            predict_all_types(current_wflow, static)
+          )
+        }
+
+        if (has_log_notes(current_pred)) {
+          location <- glue::glue("prediction {iter_pred}/{num_iterations_pred}")
+          notes <- append_log_notes(notes, current_pred, location)
+          if (is_failure(current_pred)) {
+            next
+          }
+          current_pred <- remove_log_notes(current_pred)
         }
 
         has_post <- has_tailor(current_wflow)
@@ -142,13 +155,39 @@ loopy <- function(resamples, grid, static) {
               tailor_train_data <- current_pred[0, ]
             }
 
-            post_fit <- finalize_fit_post(
-              current_wflow,
-              predictions = tailor_train_data,
-              grid = post_grid
+            post_fit <- .catch_and_log(
+              finalize_fit_post(
+                current_wflow,
+                predictions = tailor_train_data,
+                grid = post_grid
+              )
             )
 
-            post_pred <- predict(post_fit, current_pred)
+            if (has_log_notes(post_fit)) {
+              location <- glue::glue(
+                "postprocessing {iter_pred}/{num_iterations_pred}"
+              )
+              notes <- append_log_notes(notes, post_fit, location)
+              if (is_failure(post_fit)) {
+                next
+              }
+              post_fit <- remove_log_notes(post_fit)
+            }
+
+            post_pred <- .catch_and_log(
+              predict(post_fit, current_pred)
+            )
+
+            if (has_log_notes(post_pred)) {
+              location <- glue::glue(
+                "postprocessing {iter_pred}/{num_iterations_pred}"
+              )
+              notes <- append_log_notes(notes, post_pred, location)
+              if (is_failure(post_pred)) {
+                next
+              }
+              post_pred <- remove_log_notes(post_pred)
+            }
 
             current_wflow <- set_workflow_tailor(current_wflow, post_fit)
             final_pred <- dplyr::bind_cols(post_pred, current_post_grid)
