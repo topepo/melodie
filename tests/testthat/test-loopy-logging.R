@@ -119,6 +119,52 @@ test_that("prediction error doesn't stop grid", {
   expect_true(all(vapply(res_fit$.notes[[1]], is.character, logical(1))))
 })
 
+test_that("postprocessing error doesn't stop grid", {
+  # Errors in postprocessing as model is regression,
+  # but postprocessor expects probabilities
+  ames <- modeldata::ames[, c(72, 40:45)]
+
+  set.seed(1234)
+  folds <- rsample::vfold_cv(ames, 2)
+
+  exp <- bind_cols(
+    folds,
+    tibble(
+      .metrics = list(NULL)
+    )
+  )
+
+  rec_spec <- recipe(Sale_Price ~ ., ames)
+  mod_spec <- parsnip::nearest_neighbor(
+    "regression",
+    "kknn",
+    dist_power = tune()
+  )
+
+  adjust_min_zero <-
+    tailor::tailor() |>
+    tailor::adjust_probability_threshold()
+
+  wf_spec <- workflow(rec_spec, mod_spec, adjust_min_zero)
+
+  res_fit <- melodie_grid(
+    wf_spec,
+    folds,
+    grid = 2,
+    control = control_grid(allow_par = FALSE)
+  )
+
+  expect_identical(
+    dplyr::select(res_fit, -.notes),
+    exp,
+    ignore_attr = TRUE
+  )
+
+  expect_identical(nrow(res_fit$.notes[[1]]), 2L)
+  expect_identical(ncol(res_fit$.notes[[1]]), 3L)
+  expect_true(all(vapply(res_fit$.notes[[1]], is.character, logical(1))))
+})
+
 test_that("capturing error correctly in notes", {
   assign(
     "prep.step_logging_helper",
