@@ -54,7 +54,7 @@
         allow_par = FALSE))
     Message
       > A | warning: testing warning
-      There were issues with some computations   A: x2
+      There were issues with some computations   A: x1
       There were issues with some computations   A: x2
       
 
