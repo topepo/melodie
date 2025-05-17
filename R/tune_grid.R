@@ -186,6 +186,8 @@ melodie_grid_workflow <- function(
     eval_time = eval_time,
     control = control
   )
+
+  resamples
 }
 
 # ------------------------------------------------------------------------------
