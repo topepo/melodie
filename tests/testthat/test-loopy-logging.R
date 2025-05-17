@@ -20,7 +20,8 @@ test_that("preprocessor error doesn't stop grid", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -64,7 +65,8 @@ test_that("model error doesn't stop grid", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -111,7 +113,8 @@ test_that("prediction error doesn't stop grid", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -157,7 +160,8 @@ test_that("capturing error correctly in notes", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   exp <- tibble::tibble(
@@ -205,7 +209,8 @@ test_that("capturing warning correctly in notes", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
   exp <- tibble::tibble(
     location = "preprocessor 1/1",
@@ -255,7 +260,8 @@ test_that("doesn't capturing message in notes", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   exp <- tibble::tibble(
@@ -297,7 +303,8 @@ test_that("captures kknn R errors", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -341,7 +348,8 @@ test_that("captures xgboost C errors", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -402,7 +410,8 @@ test_that("captures cli styled errors", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   expect_identical(
@@ -456,7 +465,8 @@ test_that("emitter works with errors", {
       folds,
       grid = 2,
       control = control_grid(allow_par = FALSE)
-    )
+    ),
+    transform = catalog_lines
   )
 
   exp <- tibble::tibble(
