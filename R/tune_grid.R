@@ -188,6 +188,15 @@ melodie_grid_workflow <- function(
     eval_time = eval_time,
     control = control
   )
+
+  if (is_cataclysmic(resamples)) {
+    cli::cli_warn(
+      "All models failed. Run {.code show_notes(.Last.tune.result)} for more
+       information."
+    )
+  }
+
+  resamples
 }
 
 # ------------------------------------------------------------------------------

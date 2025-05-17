@@ -9,18 +9,27 @@
       There were issues with some computations   A: x1
       There were issues with some computations   A: x2
       
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # model error doesn't stop grid
 
     Code
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # prediction error doesn't stop grid
 
     Code
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # capturing error correctly in notes
 
@@ -34,6 +43,9 @@
       There were issues with some computations   A: x1
       There were issues with some computations   A: x2
       
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # capturing warning correctly in notes
 
@@ -42,7 +54,7 @@
         allow_par = FALSE))
     Message
       > A | warning: testing warning
-      There were issues with some computations   A: x1
+      There were issues with some computations   A: x2
       There were issues with some computations   A: x2
       
 
@@ -60,12 +72,18 @@
     Code
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # captures xgboost C errors
 
     Code
       res_fit <- melodie_grid(wf_spec, folds, grid = 2, control = control_grid(
         allow_par = FALSE))
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # captures cli styled errors
 
@@ -79,6 +97,9 @@
       There were issues with some computations   A: x1
       There were issues with some computations   A: x2
       
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 
 # emitter works with errors
 
@@ -92,4 +113,7 @@
       There were issues with some computations   A: x1
       There were issues with some computations   A: x2
       
+    Condition
+      Warning:
+      All models failed. Run `show_notes(.Last.tune.result)` for more information.
 

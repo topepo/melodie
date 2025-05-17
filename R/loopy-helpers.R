@@ -1,4 +1,7 @@
 # Helpers for loopy()
+#' @import rlang
+
+# TODO remove this when merged in to tune
 
 # ------------------------------------------------------------------------------
 
@@ -152,7 +155,7 @@ get_sub_param <- function(x) {
 has_tailor <- function(x) {
   "tailor" %in% names(x$post$actions)
 }
-#
+
 has_tailor_tuned <- function(x) {
   if (!has_tailor(x)) {
     res <- FALSE
@@ -175,30 +178,42 @@ has_tailor_estimated <- function(x) {
 # ------------------------------------------------------------------------------
 # Prediction and postprocessing
 
-# TODO add eval_time
-# Basic prediction on a data set (holdout of calibration) including submodels.
-# Note that if there are submodels, the results only have the grid values for
-# the submodel parameter (not the whole grid).
-sched_predict_wrapper <- function(
-  sched, # TODO rename this to be more informative with what stage
-  wflow_current,
-  static,
-  estimation = FALSE # TODO rename this to be more informative
-) {
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
-
-  has_submodel <- has_sub_param(sched$predict_stage[[1]])
-  if (has_submodel) {
-    sub_param <- get_sub_param(sched$predict_stage[[1]])
-    sub_list <- sched$predict_stage[[1]] |>
-      dplyr::select(dplyr::all_of(sub_param)) |>
-      as.list()
-  } else {
-    sub_list <- NULL
-    sub_param <- character(0)
+finalize_fit_post <- function(wflow_current, predictions, grid = NULL) {
+  if (is.null(grid)) {
+    grid <- tibble()
   }
 
-  if (estimation & static$post_estimation) {
+  post_obj <- hardhat::extract_postprocessor(wflow_current) |>
+    tune::finalize_tailor(grid)
+
+  outputs <- get_output_columns(wflow_current)
+
+  post_obj <- post_obj |>
+    fit(
+      .data = predictions,
+      outcome = !!outputs$outcome[[1]],
+      estimate = !!outputs$estimate[[1]],
+      probabilities = c(!!!outputs$probabilities)
+    )
+
+  post_obj
+}
+
+# ------------------------------------------------------------------------------
+
+predict_all_types <- function(
+    wflow_fit,
+    static,
+    submodel_grid = NULL,
+    predictee = "assessment"
+) {
+  predictee <- rlang::arg_match(predictee, c("assessment", "calibration"))
+  outputs <- get_output_columns(wflow_fit)
+
+  if (predictee == "calibration" && static$post_estimation) {
+    if (is.null(static$data$cal)) {
+      cli::cli_abort("Calibration data were requested but not reserved.", call = NULL)
+    }
     .data <- static$data$cal$data
     .ind <- static$data$cal$ind
   } else {
@@ -206,23 +221,36 @@ sched_predict_wrapper <- function(
     .ind <- static$data$pred$ind
   }
 
-  processed_data_pred <- forge_from_workflow(.data, wflow_current)
+  processed_data_pred <- forge_from_workflow(.data, wflow_fit)
   processed_data_pred$outcomes <- processed_data_pred$outcomes |>
     dplyr::mutate(.row = .ind)
+
+  sub_param <- names(submodel_grid)
+
+  # Convert argument names to parsnip format
+  # TODO look at this again to see if we really need these new functions
+  submodel_grid <- engine_to_parsnip(static$wflow, submodel_grid)
 
   pred <- NULL
   for (type_iter in static$pred_types) {
     tmp_res <- predict_wrapper(
-      model = wflow_current |> hardhat::extract_fit_parsnip(),
+      model = wflow_fit |> hardhat::extract_fit_parsnip(),
       new_data = processed_data_pred$predictors,
       type = type_iter,
       eval_time = static$eval_time,
-      subgrid = sub_list
+      subgrid = submodel_grid
     )
     tmp_res$.row <- .ind
-    if (has_submodel) {
+
+    # predict_wrapper() is designed to predict all submodels at once; we get a
+    # list column back called .pred with a single row. Collapse that and remove
+    # the submodel column since it is in the current grid.
+    if (length(sub_param) > 0) {
       tmp_res <- tidyr::unnest(tmp_res, cols = c(.pred))
     }
+
+    # Now go back to engine names
+    tmp_res <- parsnip_to_engine(static$wflow, tmp_res)
 
     if (is.null(pred)) {
       pred <- tmp_res
@@ -237,187 +265,10 @@ sched_predict_wrapper <- function(
   pred
 }
 
-pred_post_strategy <- function(wflow) {
-  if (has_tailor(wflow)) {
-    if (has_tailor_tuned(wflow)) {
-      if (has_tailor_estimated(wflow)) {
-        res <- "estimation_and_tuning"
-      } else {
-        res <- "no_estimation_but_tuning"
-      }
-    } else {
-      # Not tuned
-
-      if (has_tailor_estimated(wflow)) {
-        res <- "estimation_but_no_tuning"
-      } else {
-        res <- "no_estimation_or_tuning"
-      }
-    }
-  } else {
-    # no tailor
-    res <- "predict_only"
-  }
-
-  res
-}
-
-# Prediction when there there is no postprocessor. Submodels are processed too
-predict_only <- function(
-  wflow_current,
-  sched,
-  grid,
-  static,
-  estimation = FALSE
-) {
-  pred <- sched_predict_wrapper(sched, wflow_current, static, estimation)
-
-  # When there are submodels, the grid is already in 'pred'. Otherwise merge
-  # them into the predictions
-  if (!has_sub_param(sched$predict_stage[[1]])) {
-    pred <- vctrs::vec_cbind(pred, grid)
-  }
-
-  reorder_pred_cols(pred, static$y_name)
-}
-
-predictions <- function(wflow_current, sched, static, grid) {
-  strategy <- pred_post_strategy(wflow_current)
-
-  if (strategy == "predict_only") {
-    pred <- predict_only(wflow_current, sched, grid, static)
-  } else if (strategy == "no_estimation_or_tuning") {
-    pred <- post_no_estimation_or_tuning(wflow_current, sched, grid, static)
-  } else if (strategy == "no_estimation_but_tuning") {
-    pred <- post_no_estimation_but_tuning(wflow_current, sched, grid, static)
-  } else if (strategy == "estimation_but_no_tuning") {
-    pred <- post_estimation_but_no_tuning(wflow_current, sched, grid, static)
-  } else {
-    pred <- post_estimation_and_tuning(wflow_current, sched, grid, static)
-  }
-
-  # TODO return pred and fitted workflow(s) IF extraction
-
-  if (!tibble::is_tibble(pred)) {
-    # TODO probably not needed
-    pred <- dplyr::as_tibble(pred)
-  }
-  pred
-}
-
-# Get the raw predictions for the calibration and assessment sets, train a single
-# tailor, then apply it to the assessment data
-post_estimation_but_no_tuning <- function(wflow_current, sched, grid, static) {
-  cal_predictions <- predict_only(
-    wflow_current,
-    sched,
-    grid,
-    static,
-    estimation = TRUE
-  )
-  perf_predictions <- predict_only(
-    wflow_current,
-    sched,
-    grid,
-    static,
-    estimation = FALSE
-  )
-
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
-
-  post_obj <- wflow_current |>
-    hardhat::extract_postprocessor() |>
-    fit(
-      .data = cal_predictions,
-      outcome = !!outputs$outcome[[1]],
-      estimate = !!outputs$estimate[[1]],
-      probabilities = c(!!!outputs$probabilities)
-    )
-
-  res <- predict(post_obj, perf_predictions)
-  reorder_pred_cols(res, static$y_name)
-}
-
-# Get the raw predictions for the calibration and assessment sets, looping over
-# tuning parameters to train tailors, then apply them to the assessment data
-post_estimation_and_tuning <- function(wflow_current, sched, grid, static) {
-  post_obj <- hardhat::extract_postprocessor(wflow_current)
-  post_id <- setdiff(static$param_info$id, names(grid))
-
-  post_candidates <- sched$predict_stage[[1]] |>
-    tidyr::unnest(cols = c(post_stage)) |>
-    dplyr::select(dplyr::all_of(post_id)) |>
-    dplyr::distinct()
-
-  post_predictions <- NULL
-  for (j in 1:nrow(post_candidates)) {
-    current_post_param <- post_candidates[j, ]
-
-    # Finalize current tailor with parameters and stuff back in the workflow
-    tmp_post <- finalize_tailor(post_obj, current_post_param)
-    tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-    tmp_pred <- post_estimation_but_no_tuning(
-      tmp_wflow,
-      sched,
-      grid,
-      static
-    ) |>
-      vctrs::vec_cbind(current_post_param)
-    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
-  }
-  reorder_pred_cols(post_predictions, static$y_name)
-}
-
-# Get the predictions for the assessment set, "train" a single tailor, then
-# apply it to all of the data
-post_no_estimation_or_tuning <- function(wflow_current, sched, grid, static) {
-  raw_predictions <- predict_only(wflow_current, sched, grid, static)
-
-  outputs <- get_output_columns(wflow_current, syms = TRUE)
-
-  post_obj <- wflow_current |>
-    hardhat::extract_postprocessor() |>
-    fit(
-      # The data are not used for estimation, so save time with plist
-      .data = raw_predictions[0, ],
-      outcome = !!outputs$outcome[[1]],
-      estimate = !!outputs$estimate[[1]],
-      probabilities = c(!!!outputs$probabilities)
-    )
-
-  pred <- predict(post_obj, raw_predictions)
-  reorder_pred_cols(pred, static$y_name)
-}
-
-# Get the predictions for the assessment set, "train" a single tailor, then
-# apply it to all of the data
-post_no_estimation_but_tuning <- function(wflow_current, sched, grid, static) {
-  post_obj <- hardhat::extract_postprocessor(wflow_current)
-  post_id <- setdiff(static$param_info$id, names(grid))
-
-  post_candidates <- sched$predict_stage[[1]] |>
-    tidyr::unnest(cols = c(post_stage)) |>
-    dplyr::select(dplyr::all_of(post_id)) |>
-    dplyr::distinct()
-
-  post_predictions <- NULL
-  for (j in 1:nrow(post_candidates)) {
-    current_post_param <- post_candidates[j, ]
-
-    # Finalize current tailor with parameters and stuff back in the workflow
-    tmp_post <- finalize_tailor(post_obj, current_post_param)
-    tmp_wflow <- set_workflow_tailor(wflow_current, tmp_post)
-    tmp_pred <- post_no_estimation_or_tuning(tmp_wflow, sched, grid, static) |>
-      vctrs::vec_cbind(current_post_param)
-    post_predictions <- dplyr::bind_rows(post_predictions, tmp_pred)
-  }
-  reorder_pred_cols(post_predictions, static$y_name)
-}
-
 # ------------------------------------------------------------------------------
 # Fitting/training functions
 
-pre_update_fit <- function(wflow_current, grid, static) {
+finalize_fit_pre <- function(wflow_current, grid, static) {
   pre_proc <- hardhat::extract_preprocessor(wflow_current)
 
   if (inherits(pre_proc, "recipe")) {
@@ -434,7 +285,7 @@ pre_update_fit <- function(wflow_current, grid, static) {
   workflows::.fit_pre(wflow_current, static$data$fit$data)
 }
 
-model_update_fit <- function(wflow_current, grid) {
+finalize_fit_model <- function(wflow_current, grid) {
   mod_spec <- hardhat::extract_spec_parsnip(wflow_current)
 
   grid <- remove_stage(grid)
@@ -458,7 +309,7 @@ rebind_grid <- function(...) {
   list(...) |> purrr::map(remove_stage) |> purrr::list_cbind()
 }
 
-get_output_columns <- function(x, syms = FALSE) {
+get_output_columns <- function(x) {
   # This needs a fitted model or workflow
   pred_cols <- parsnip::.get_prediction_column_names(x, syms = TRUE)
   res <- c(list(outcome = rlang::syms(outcome_names(x))), pred_cols)
@@ -637,4 +488,32 @@ reorder_pred_cols <- function(x, y_name) {
       dplyr::any_of(".row"),
       .before = dplyr::everything()
     )
+}
+
+engine_to_parsnip <- function(wflow, grid) {
+  grid_nm <- names(grid)
+  key <- parsnip:::.model_param_name_key(wflow) |>
+    dplyr::filter(user != parsnip & user %in% grid_nm) |>
+    dplyr::select(-engine)
+
+  if (nrow(key) == 0) {
+    return(grid)
+  }
+  nm_lst <- key$user
+  names(nm_lst) <- key$parsnip
+  dplyr::rename(grid, dplyr::all_of(nm_lst))
+}
+
+parsnip_to_engine <- function(wflow, grid) {
+  grid_nm <- names(grid)
+  key <- parsnip:::.model_param_name_key(wflow) |>
+    dplyr::filter(user != parsnip & parsnip %in% grid_nm) |>
+    dplyr::select(-engine)
+
+  if (nrow(key) == 0) {
+    return(grid)
+  }
+  nm_lst <- key$parsnip
+  names(nm_lst) <- key$user
+  dplyr::rename(grid, dplyr::all_of(nm_lst))
 }

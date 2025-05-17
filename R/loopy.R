@@ -34,15 +34,15 @@ loopy <- function(resamples, grid, static) {
   # ----------------------------------------------------------------------------
   # Iterate over preprocessors
 
-  num_pre_iter <- nrow(sched)
+  num_iterations_pre <- nrow(sched)
 
-  for (pre in seq_len(num_pre_iter)) {
-    current_pre <- sched[pre, ]
+  for (iter_pre in seq_len(num_iterations_pre)) {
+    current_sched_pre <- sched[iter_pre, ]
     current_wflow <- .catch_and_log(
-      pre_update_fit(static$wflow, current_pre, static)
+      finalize_fit_pre(static$wflow, current_sched_pre, static)
     )
     if (has_log_notes(current_wflow)) {
-      location <- glue::glue("preprocessor {pre}/{num_pre_iter}")
+      location <- glue::glue("preprocessor {iter_pre}/{num_iterations_pre}")
       notes <- append_log_notes(notes, current_wflow, location)
       catalog_log(notes)
       if (is_failure(current_wflow)) {
@@ -51,19 +51,26 @@ loopy <- function(resamples, grid, static) {
       current_wflow <- remove_log_notes(current_wflow)
     }
 
-    num_mod_iter <- nrow(current_pre$model_stage[[1]])
+    num_iterations_model <- nrow(current_sched_pre$model_stage[[1]])
 
     # --------------------------------------------------------------------------
     # Iterate over model parameters
 
-    for (mod in seq_len(num_mod_iter)) {
-      current_model <- current_pre$model_stage[[1]][mod, ]
+    # Make a copy of the current workflow so that we can finalize it multiple
+    # times, since finalize_*() functions will not update parameters whose
+    # values currently are tune()
+    pre_wflow <- current_wflow
 
+    for (iter_model in seq_len(num_iterations_model)) {
+      current_sched_model <- current_sched_pre$model_stage[[1]][iter_model, ]
+
+      # Splice in any parameters marked for tuning and fit the model
       current_wflow <- .catch_and_log(
-        model_update_fit(current_wflow, current_model)
+        finalize_fit_model(pre_wflow, current_sched_model)
       )
+
       if (has_log_notes(current_wflow)) {
-        location <- glue::glue("model {mod}/{num_mod_iter}")
+        location <- glue::glue("model {iter_model}/{num_iterations_model}")
         notes <- append_log_notes(notes, current_wflow, location)
         if (is_failure(current_wflow)) {
           next
@@ -71,35 +78,145 @@ loopy <- function(resamples, grid, static) {
         current_wflow <- remove_log_notes(current_wflow)
       }
 
-      num_pred_iter <- nrow(current_model$predict_stage[[1]])
-      current_grid <- rebind_grid(current_pre, current_model)
+      current_grid <- rebind_grid(current_sched_pre, current_sched_model)
 
-      # ------------------------------------------------------------------------
-      # Iterate over predictions and postprocessors
+      has_submodel <- has_sub_param(current_sched_model$predict_stage[[1]])
+      num_iterations_pred <- nrow(current_sched_model$predict_stage[[1]])
 
-      pred <- .catch_and_log(
-        predictions(
-          wflow_current = current_wflow,
-          sched = current_model,
-          static = static,
-          grid = current_grid
-        )
-      )
-      if (has_log_notes(pred)) {
-        location <- glue::glue("prediction {mod}/{num_mod_iter}")
-        notes <- append_log_notes(notes, pred, location)
-        if (is_failure(pred)) {
-          next
+      # --------------------------------------------------------------------------
+      # Iterate over prediction submodels
+
+      for (iter_pred in seq_len(num_iterations_pred)) {
+        # cli::cli_inform("Predicting {iter_pred} of {num_iterations_pred}")
+
+        current_sched_pred <- current_sched_model$predict_stage[[1]][
+          iter_pred,
+        ]
+
+        if (has_submodel) {
+          sub_nm <- get_sub_param(current_sched_pred)
+          sub_grid <- current_sched_pred[, sub_nm]
+
+          # The assigned submodel parameter (from min_grid()) is in the
+          # current grid. Remove that and add the one that we are predicting on
+
+          current_grid <- current_grid |>
+            dplyr::select(-dplyr::all_of(sub_nm)) |>
+            rebind_grid(current_sched_pred)
+
+          # Remove the submodel column since it is in the currrent grid.
+          current_pred <- .catch_and_log(
+            predict_all_types(current_wflow, static, sub_grid) |>
+              dplyr::select(-dplyr::all_of(sub_nm))
+          )
+        } else {
+          current_pred <- .catch_and_log(
+            predict_all_types(current_wflow, static)
+          )
         }
-        pred <- remove_log_notes(pred)
-      }
-      # ------------------------------------------------------------------------
-      # Allocate predictions to an overall object
 
-      pred_iter <- pred_iter + 1
-      pred_reserve <- update_reserve(pred_reserve, pred_iter, pred, nrow(grid))
+        if (has_log_notes(current_pred)) {
+          location <- glue::glue("prediction {iter_pred}/{num_iterations_pred}")
+          notes <- append_log_notes(notes, current_pred, location)
+          if (is_failure(current_pred)) {
+            next
+          }
+          current_pred <- remove_log_notes(current_pred)
+        }
+
+        has_post <- has_tailor(current_wflow)
+        num_iterations_post <- nrow(current_sched_pred$post_stage[[1]])
+
+        # ----------------------------------------------------------------------
+        # Iterate over postprocessors
+
+        current_predict_grid <- current_grid
+
+        for (iter_post in seq_len(num_iterations_post)) {
+          # cli::cli_inform("-- Postprocessing {iter_post} of {num_iterations_post}")
+
+          if (has_post) {
+            current_sched_post <-
+              current_sched_pred$post_stage[[1]][iter_post, ]
+            post_grid <- current_sched_post
+
+            current_post_grid <- rebind_grid(
+              current_predict_grid,
+              current_sched_post
+            )
+
+            # make data for prediction (TODO maybe make a function)
+            if (has_tailor_estimated(current_wflow)) {
+              tailor_train_data <- predict_all_types(
+                current_wflow,
+                static,
+                predictee = "calibration"
+              )
+            } else {
+              tailor_train_data <- current_pred[0, ]
+            }
+
+            post_fit <- .catch_and_log(
+              finalize_fit_post(
+                current_wflow,
+                predictions = tailor_train_data,
+                grid = post_grid
+              )
+            )
+
+            if (has_log_notes(post_fit)) {
+              location <- glue::glue(
+                "postprocessing {iter_pred}/{num_iterations_pred}"
+              )
+              notes <- append_log_notes(notes, post_fit, location)
+              if (is_failure(post_fit)) {
+                next
+              }
+              post_fit <- remove_log_notes(post_fit)
+            }
+
+            post_pred <- .catch_and_log(
+              predict(post_fit, current_pred)
+            )
+
+            if (has_log_notes(post_pred)) {
+              location <- glue::glue(
+                "postprocessing {iter_pred}/{num_iterations_pred}"
+              )
+              notes <- append_log_notes(notes, post_pred, location)
+              if (is_failure(post_pred)) {
+                next
+              }
+              post_pred <- remove_log_notes(post_pred)
+            }
+
+            current_wflow <- set_workflow_tailor(current_wflow, post_fit)
+            final_pred <- dplyr::bind_cols(post_pred, current_post_grid)
+          } else {
+            # No postprocessor so just use what we have
+            final_pred <- dplyr::bind_cols(current_pred, current_predict_grid)
+          }
+
+          # --------------------------------------------------------------------
+          # Allocate predictions to an overall object
+
+          pred_iter <- pred_iter + 1
+          # cli::cli_inform("-- -- Allocation {pred_iter} of {nrow(grid)}")
+          # TODO We might not be able to predict ahead of time how many rows should
+          # be in the reserve
+          # pred_reserve <- update_reserve(pred_reserve, pred_iter, final_pred, nrow(grid))
+
+          pred_reserve <- dplyr::bind_rows(pred_reserve, final_pred)
+
+          # --------------------------------------------------------------------
+          # Placeholder for extraction
+        } # post loop
+      } # predict loop
     } # model loop
   } # pre loop
+
+  # ----------------------------------------------------------------------------
+  # Compute metrics on each config and eval_time
 
   if (is.null(pred_reserve)) {
     all_metrics <- NULL
