@@ -13,12 +13,14 @@ test_that("preprocessor error doesn't stop grid", {
     )
   )
 
-  res_fit <- melodie_grid(
-    parsnip::nearest_neighbor("regression", "kknn", dist_power = tune()),
-    Sale_Price ~ .,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      parsnip::nearest_neighbor("regression", "kknn", dist_power = tune()),
+      Sale_Price ~ .,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -56,11 +58,13 @@ test_that("model error doesn't stop grid", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -101,11 +105,13 @@ test_that("prediction error doesn't stop grid", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -147,11 +153,13 @@ test_that("postprocessing error doesn't stop grid", {
 
   wf_spec <- workflow(rec_spec, mod_spec, adjust_min_zero)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -191,11 +199,13 @@ test_that("capturing error correctly in notes", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   exp <- tibble::tibble(
@@ -237,11 +247,14 @@ test_that("capturing warning correctly in notes", {
   )
 
   wf_spec <- workflow(rec_spec, mod_spec)
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   exp <- tibble::tibble(
@@ -328,11 +341,13 @@ test_that("captures kknn R errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -370,11 +385,13 @@ test_that("captures xgboost C errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(
@@ -429,11 +446,13 @@ test_that("captures cli styled errors", {
 
   wf_spec <- workflow(rec_spec, mod_spec)
 
-  res_fit <- melodie_grid(
-    wf_spec,
-    folds,
-    grid = 2,
-    control = control_grid(allow_par = FALSE)
+  expect_snapshot(
+    res_fit <- melodie_grid(
+      wf_spec,
+      folds,
+      grid = 2,
+      control = control_grid(allow_par = FALSE)
+    )
   )
 
   expect_identical(

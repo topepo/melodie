@@ -262,3 +262,15 @@ pretty.tune_results <- function(x, ...) {
   env$.Last.tune.result <- x
   invisible(NULL)
 }
+
+is_cataclysmic <- function(x) {
+  is_err <- purrr::map_lgl(x$.metrics, inherits, c("simpleError", "error"))
+  if (any(!is_err)) {
+    is_good <- purrr::map_lgl(
+      x$.metrics[!is_err],
+      ~ tibble::is_tibble(.x) && nrow(.x) > 0
+    )
+    is_err[!is_err] <- !is_good
+  }
+  all(is_err)
+}
