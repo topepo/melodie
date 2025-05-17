@@ -58,3 +58,7 @@ prep.step_logging_helper <- function(x, training, info = NULL, ...) {
 bake.step_logging_helper <- function(object, new_data, ...) {
   new_data
 }
+
+catalog_lines <- function(lines) {
+  lines[grepl("^>", lines)]
+}
