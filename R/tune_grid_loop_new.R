@@ -20,16 +20,21 @@ tune_grid_loop_new <- function(
 
   # add an on.exit(); esc puts us in code
 
+  # Notes on debugging:
+  # 1. You can set `options(future.debug = TRUE)` to help
+  # 2. If you are debugging loopy, use the control option `allow_par = FALSE`;
+  #    that will use `lapply()` so that you can see output.
+
   # ------------------------------------------------------------------------------
   # Collect "static" data into a single object for a cleaner interface
 
   static <- make_static(
     workflow,
-    param_info,
-    metrics,
-    eval_time,
-    split_args,
-    control
+    param_info = param_info,
+    metrics = metrics,
+    eval_time = eval_time,
+    split_args = split_args,
+    control = control
   )
 
   tm_pkgs <- c("rsample", "workflows", "hardhat", "tune", "parsnip", "tailor")

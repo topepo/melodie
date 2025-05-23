@@ -63,13 +63,10 @@ Remotes:
     tidymodels/dials,
     tidymodels/hardhat,
     tidymodels/parsnip,
-    tidymodels/probably,
-    tidymodels/recipes,
     tidymodels/rsample,
     tidymodels/tailor,
     tidymodels/tune,
-    tidymodels/workflows,
-    KlausVigo/kknn#28
+    tidymodels/workflows
 Config/Needs/website: pkgdown, tidymodels, kknn, doParallel, doFuture,
     tidyverse/tidytemplate
 Config/testthat/edition: 3
