@@ -64,11 +64,13 @@ check_static_data <- function(x, elem = "fit") {
     )
   }
 
-  if (!tibble::is_tibble(x[["data"]])) {
+  if (!is.data.frame(x[["data"]])) {
     cli::cli_abort(
-      "Element {.arg data} should be a tibble in the {.field {elem}}
-                   slot."
+      "Element {.arg data} should be a tibble in the {.field {elem}} slot."
     )
+    if (!tibble::is_tibble(x[["data"]])) {
+      x[["data"]] <- tibble::as_tibble(x[["data"]])
+    }
   }
 
   x
@@ -202,17 +204,20 @@ finalize_fit_post <- function(wflow_current, predictions, grid = NULL) {
 # ------------------------------------------------------------------------------
 
 predict_all_types <- function(
-    wflow_fit,
-    static,
-    submodel_grid = NULL,
-    predictee = "assessment"
+  wflow_fit,
+  static,
+  submodel_grid = NULL,
+  predictee = "assessment"
 ) {
   predictee <- rlang::arg_match(predictee, c("assessment", "calibration"))
   outputs <- get_output_columns(wflow_fit)
 
   if (predictee == "calibration" && static$post_estimation) {
     if (is.null(static$data$cal)) {
-      cli::cli_abort("Calibration data were requested but not reserved.", call = NULL)
+      cli::cli_abort(
+        "Calibration data were requested but not reserved.",
+        call = NULL
+      )
     }
     .data <- static$data$cal$data
     .ind <- static$data$cal$ind
@@ -298,7 +303,7 @@ finalize_fit_model <- function(wflow_current, grid) {
     wflow_current <- set_workflow_spec(wflow_current, mod_spec)
   }
 
-  # .catch_and_log_fit()
+  # .catch_and_log_melodie_fit()
   .fit_model(wflow_current, workflows::control_workflow())
 }
 
