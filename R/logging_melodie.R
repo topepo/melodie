@@ -1,9 +1,9 @@
-.catch_and_log <- function(.expr) {
-  tmp <- catcher(.expr)
+.catch_and_log_melodie <- function(.expr) {
+  tmp <- catcher_melodie(.expr)
   tmp
 }
 
-catcher <- function(expr) {
+catcher_melodie <- function(expr) {
   signals <- list()
   add_cond <- function(cnd) {
     signals <<- append(signals, list(cnd))
@@ -17,16 +17,16 @@ catcher <- function(expr) {
   res
 }
 
-is_failure <- function(x) {
+is_failure_melodie <- function(x) {
   inherits(x, "try-error")
 }
 
 has_log_notes <- function(x) {
-  is_failure(x) || NROW(attr(x, "notes")) > 0
+  is_failure_melodie(x) || NROW(attr(x, "notes")) > 0
 }
 
 append_log_notes <- function(notes, x, location) {
-  if (is_failure(x)) {
+  if (is_failure_melodie(x)) {
     type <- "error"
     x <- attr(x, 'condition')
     note <- conditionMessage(x)
@@ -57,7 +57,7 @@ melodie_env <-
     )
   )
 
-lbls <- c(LETTERS, letters, 1:1e3)
+lbls_melodie <- c(LETTERS, letters, 1:1e3)
 
 catalog_log <- function(x) {
   catalog <- rlang::env_get(melodie_env, "progress_catalog")
@@ -88,7 +88,7 @@ catalog_log <- function(x) {
       note <- paste0("\u00a0\u00a0", note)
     }
     msg <- glue::glue(
-      "{color(cli::style_bold(lbls[new_id]))} | {color(x$type)}: {x$note}"
+      "{color(cli::style_bold(lbls_melodie[new_id]))} | {color(x$type)}: {x$note}"
     )
     cli::cli_alert(msg)
   }
@@ -96,7 +96,7 @@ catalog_log <- function(x) {
   rlang::env_bind(melodie_env, progress_catalog = catalog)
   rlang::env_bind(
     melodie_env$progress_env,
-    catalog_summary = summarize_catalog(catalog)
+    catalog_summary = summarize_catalog_melodie(catalog)
   )
 
   rlang::with_options(
@@ -116,7 +116,7 @@ catalog_log <- function(x) {
 
 # given a catalog, summarize errors and warnings in a 1-length glue vector.
 # for use by the progress bar inside of `tune_catalog()`.
-summarize_catalog <- function(catalog, sep = "   ") {
+summarize_catalog_melodie <- function(catalog, sep = "   ") {
   if (nrow(catalog) == 0) {
     return("")
   }
@@ -133,7 +133,7 @@ summarize_catalog <- function(catalog, sep = "   ") {
   res <- dplyr::rowwise(res)
   res <- dplyr::mutate(
     res,
-    msg = glue::glue("{color(cli::style_bold(lbls[id]))}: x{n}")
+    msg = glue::glue("{color(cli::style_bold(lbls_melodie[id]))}: x{n}")
   )
   res <- dplyr::ungroup(res)
   res <- dplyr::pull(res, msg)
@@ -143,7 +143,7 @@ summarize_catalog <- function(catalog, sep = "   ") {
 }
 
 
-initialize_catalog <- function(env = rlang::caller_env()) {
+initialize_catalog_melodie <- function(env = rlang::caller_env()) {
   catalog <-
     tibble::new_tibble(
       list(

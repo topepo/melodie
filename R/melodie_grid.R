@@ -156,7 +156,7 @@ melodie_grid_workflow <- function(
   rng = TRUE,
   call = caller_env()
 ) {
-  initialize_catalog()
+  initialize_catalog_melodie()
 
   check_rset(resamples)
 
